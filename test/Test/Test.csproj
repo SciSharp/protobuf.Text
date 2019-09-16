@@ -12,4 +12,7 @@
   <ItemGroup>
     <ProjectReference Include="../../src/protobuf.Text/protobuf.Text.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="testprotos.pb" />
+  </ItemGroup>
 </Project>

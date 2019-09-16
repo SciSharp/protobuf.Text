@@ -121,5 +121,10 @@ namespace Protobuf.Text
             // strictly positive.
             return Math.Sign(seconds) * Math.Sign(nanoseconds) != -1;
         }
+
+        internal static bool IsExtension(this FieldDescriptor descriptor)
+        {
+            return false;
+        }
     }
 }
