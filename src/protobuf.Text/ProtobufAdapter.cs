@@ -126,5 +126,20 @@ namespace Protobuf.Text
         {
             return false;
         }
+
+        public static T ParseText<T>(this MessageParser<T> parser, string text)
+            where T : IMessage<T>
+        {
+            var message = (T)parser.CreateTemplate();
+            TextParser.Default.Merge(message, text);
+            return message;
+        }
+
+        public static IMessage ParseText(this MessageParser parser, string text)
+        {
+            var message = parser.CreateTemplate();
+            TextParser.Default.Merge(message, text);
+            return message;
+        }
     }
 }

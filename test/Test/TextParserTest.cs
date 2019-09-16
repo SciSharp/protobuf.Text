@@ -70,16 +70,16 @@ namespace Test
         {
             // Test that integer parsing is strict. We assume that if this is correct for int32,
             // it's correct for other numeric key types.
-            var json = "{ \"mapInt32Int32\": { \"" + keyText + "\" : \"1\" } }";
+            var json = "mapInt32Int32: {" + keyText + " : \"1\" }";
             Assert.Throws<InvalidProtocolBufferException>(() => TextParser.Default.Parse<TestMap>(json));
         }
 
         [Fact]
         public void OriginalFieldNameAccepted()
         {
-            var json = "{ \"single_int32\": 10 }";
+            var json = "single_int32: 10";
             var expected = new TestAllTypes { SingleInt32 = 10 };
-            Assert.Equal(expected, TestAllTypes.Parser.ParseJson(json));
+            Assert.Equal(expected, TestAllTypes.Parser.ParseText(json));
         }
 
         [Fact]
@@ -103,6 +103,7 @@ namespace Test
                 Uint32Field = 0,
                 Uint64Field = 0
             };
+
             AssertRoundtrip(message);
         }
 
@@ -122,9 +123,7 @@ namespace Test
                 Uint64Field = 4
             };
 
-            Console.WriteLine(TextFormatter.Format(message));
-
-            //AssertRoundtrip(message);
+            AssertRoundtrip(message);
         }
 
         [Fact]
@@ -201,39 +200,39 @@ namespace Test
         public void RepeatedField_NullElementProhibited()
         {
             string json = "{ \"repeated_foreign_message\": [null] }";
-            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseJson(json));
+            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseText(json));
         }
 
         [Fact]
         public void RepeatedField_NullOverallValueAllowed()
         {
-            string json = "{ \"repeated_foreign_message\": null }";
-            Assert.Equal(new TestAllTypes(), TestAllTypes.Parser.ParseJson(json));
+            string json = "repeated_foreign_message: null";
+            Assert.Equal(new TestAllTypes(), TestAllTypes.Parser.ParseText(json));
         }
 
         [Theory]
-        [InlineData("{ \"mapInt32Int32\": { \"10\": null }")]
-        [InlineData("{ \"mapStringString\": { \"abc\": null }")]
-        [InlineData("{ \"mapInt32ForeignMessage\": { \"10\": null }")]
+        [InlineData("mapInt32Int32: { 10: null }")]
+        [InlineData("mapStringString: { abc: null }")]
+        [InlineData("mapInt32ForeignMessage: { 10: null }")]
         public void MapField_NullValueProhibited(string json)
         {
-            Assert.Throws<InvalidProtocolBufferException>(() => TestMap.Parser.ParseJson(json));
+            Assert.Throws<InvalidProtocolBufferException>(() => TestMap.Parser.ParseText(json));
         }
 
         [Fact]
         public void MapField_NullOverallValueAllowed()
         {
-            string json = "{ \"mapInt32Int32\": null }";
-            Assert.Equal(new TestMap(), TestMap.Parser.ParseJson(json));
+            string json = "mapInt32Int32: null";
+            Assert.Equal(new TestMap(), TestMap.Parser.ParseText(json));
         }
 
         [Fact]
         public void IndividualWrapperTypes()
         {
-            Assert.Equal(new StringValue { Value = "foo" }, StringValue.Parser.ParseJson("\"foo\""));
-            Assert.Equal(new Int32Value { Value = 1 }, Int32Value.Parser.ParseJson("1"));
+            Assert.Equal(new StringValue { Value = "foo" }, StringValue.Parser.ParseText("\"foo\""));
+            Assert.Equal(new Int32Value { Value = 1 }, Int32Value.Parser.ParseText("1"));
             // Can parse strings directly too
-            Assert.Equal(new Int32Value { Value = 1 }, Int32Value.Parser.ParseJson("\"1\""));
+            Assert.Equal(new Int32Value { Value = 1 }, Int32Value.Parser.ParseText("\"1\""));
         }
 
         private static void AssertRoundtrip<T>(T message) where T : IMessage<T>, new()
@@ -253,8 +252,8 @@ namespace Test
         [InlineData("-2147483648", -2147483648)]
         public void StringToInt32_Valid(string jsonValue, int expectedParsedValue)
         {
-            string json = "{ \"singleInt32\": \"" + jsonValue + "\"}";
-            var parsed = TestAllTypes.Parser.ParseJson(json);
+            string json = "singleInt32: \"" + jsonValue + "\"";
+            var parsed = TestAllTypes.Parser.ParseText(json);
             Assert.Equal(expectedParsedValue, parsed.SingleInt32);
         }
 
@@ -272,8 +271,8 @@ namespace Test
         [InlineData("-2147483649")]
         public void StringToInt32_Invalid(string jsonValue)
         {
-            string json = "{ \"singleInt32\": \"" + jsonValue + "\"}";
-            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseJson(json));
+            string json = "singleInt32: \"" + jsonValue + "\"";
+            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseText(json));
         }
 
         [Theory]
@@ -282,8 +281,8 @@ namespace Test
         [InlineData("4294967295", 4294967295U)]
         public void StringToUInt32_Valid(string jsonValue, uint expectedParsedValue)
         {
-            string json = "{ \"singleUint32\": \"" + jsonValue + "\"}";
-            var parsed = TestAllTypes.Parser.ParseJson(json);
+            string json = "singleUint32: \"" + jsonValue + "\"";
+            var parsed = TestAllTypes.Parser.ParseText(json);
             Assert.Equal(expectedParsedValue, parsed.SingleUint32);
         }
 
@@ -293,8 +292,8 @@ namespace Test
         [InlineData("4294967296")]
         public void StringToUInt32_Invalid(string jsonValue)
         {
-            string json = "{ \"singleUint32\": \"" + jsonValue + "\"}";
-            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseJson(json));
+            string json = "singleUint32: \"" + jsonValue + "\"";
+            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseText(json));
         }
 
         [Theory]
@@ -305,8 +304,8 @@ namespace Test
         [InlineData("-9223372036854775808", -9223372036854775808)]
         public void StringToInt64_Valid(string jsonValue, long expectedParsedValue)
         {
-            string json = "{ \"singleInt64\": \"" + jsonValue + "\"}";
-            var parsed = TestAllTypes.Parser.ParseJson(json);
+            string json = "singleInt64: \"" + jsonValue + "\"";
+            var parsed = TestAllTypes.Parser.ParseText(json);
             Assert.Equal(expectedParsedValue, parsed.SingleInt64);
         }
 
@@ -316,8 +315,8 @@ namespace Test
         [InlineData("9223372036854775808")]
         public void StringToInt64_Invalid(string jsonValue)
         {
-            string json = "{ \"singleInt64\": \"" + jsonValue + "\"}";
-            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseJson(json));
+            string json = "singleInt64: \"" + jsonValue + "\"";
+            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseText(json));
         }
 
         [Theory]
@@ -326,8 +325,8 @@ namespace Test
         [InlineData("18446744073709551615", 18446744073709551615)]
         public void StringToUInt64_Valid(string jsonValue, ulong expectedParsedValue)
         {
-            string json = "{ \"singleUint64\": \"" + jsonValue + "\"}";
-            var parsed = TestAllTypes.Parser.ParseJson(json);
+            string json = "singleUint64: \"" + jsonValue + "\"";
+            var parsed = TestAllTypes.Parser.ParseText(json);
             Assert.Equal(expectedParsedValue, parsed.SingleUint64);
         }
 
@@ -337,8 +336,8 @@ namespace Test
         [InlineData("18446744073709551616")]
         public void StringToUInt64_Invalid(string jsonValue)
         {
-            string json = "{ \"singleUint64\": \"" + jsonValue + "\"}";
-            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseJson(json));
+            string json = "singleUint64: \"" + jsonValue + "\"";
+            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseText(json));
         }
 
         [Theory]
@@ -362,8 +361,8 @@ namespace Test
         [InlineData("NaN", double.NaN)]
         public void StringToDouble_Valid(string jsonValue, double expectedParsedValue)
         {
-            string json = "{ \"singleDouble\": \"" + jsonValue + "\"}";
-            var parsed = TestAllTypes.Parser.ParseJson(json);
+            string json = "singleDouble: \"" + jsonValue + "\"";
+            var parsed = TestAllTypes.Parser.ParseText(json);
             Assert.Equal(expectedParsedValue, parsed.SingleDouble);
         }
 
@@ -390,8 +389,8 @@ namespace Test
         [InlineData("\u00BD")] // 1/2 as a single Unicode character. Just sanity checking...
         public void StringToDouble_Invalid(string jsonValue)
         {
-            string json = "{ \"singleDouble\": \"" + jsonValue + "\"}";
-            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseJson(json));
+            string json = "singleDouble: \"" + jsonValue + "\"";
+            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseText(json));
         }
 
         [Theory]
@@ -405,8 +404,8 @@ namespace Test
         [InlineData("15e-1", 1.5f)]
         public void StringToFloat_Valid(string jsonValue, float expectedParsedValue)
         {
-            string json = "{ \"singleFloat\": \"" + jsonValue + "\"}";
-            var parsed = TestAllTypes.Parser.ParseJson(json);
+            string json = "singleFloat: \"" + jsonValue + "\"";
+            var parsed = TestAllTypes.Parser.ParseText(json);
             Assert.Equal(expectedParsedValue, parsed.SingleFloat);
         }
 
@@ -420,8 +419,8 @@ namespace Test
         [InlineData("--1")]
         public void StringToFloat_Invalid(string jsonValue)
         {
-            string json = "{ \"singleFloat\": \"" + jsonValue + "\"}";
-            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseJson(json));
+            string json = "singleFloat: \"" + jsonValue + "\"";
+            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseText(json));
         }
 
         [Theory]
@@ -437,8 +436,8 @@ namespace Test
         [InlineData("-10.00", -10)]
         public void NumberToInt32_Valid(string jsonValue, int expectedParsedValue)
         {
-            string json = "{ \"singleInt32\": " + jsonValue + "}";
-            var parsed = TestAllTypes.Parser.ParseJson(json);
+            string json = "singleInt32: " + jsonValue;
+            var parsed = TestAllTypes.Parser.ParseText(json);
             Assert.Equal(expectedParsedValue, parsed.SingleInt32);
         }
 
@@ -455,8 +454,8 @@ namespace Test
         [InlineData("-2147483649", typeof(InvalidProtocolBufferException))]
         public void NumberToInt32_Invalid(string jsonValue, System.Type expectedExceptionType)
         {
-            string json = "{ \"singleInt32\": " + jsonValue + "}";
-            Assert.Throws(expectedExceptionType, () => TestAllTypes.Parser.ParseJson(json));
+            string json = "singleInt32: " + jsonValue;
+            Assert.Throws(expectedExceptionType, () => TestAllTypes.Parser.ParseText(json));
         }
 
         [Theory]
@@ -465,8 +464,8 @@ namespace Test
         [InlineData("4294967295", 4294967295U)]
         public void NumberToUInt32_Valid(string jsonValue, uint expectedParsedValue)
         {
-            string json = "{ \"singleUint32\": " + jsonValue + "}";
-            var parsed = TestAllTypes.Parser.ParseJson(json);
+            string json = "singleUint32: " + jsonValue;
+            var parsed = TestAllTypes.Parser.ParseText(json);
             Assert.Equal(expectedParsedValue, parsed.SingleUint32);
         }
 
@@ -476,8 +475,8 @@ namespace Test
         [InlineData("4294967296")]
         public void NumberToUInt32_Invalid(string jsonValue)
         {
-            string json = "{ \"singleUint32\": " + jsonValue + "}";
-            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseJson(json));
+            string json = "singleUint32: " + jsonValue;
+            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseText(json));
         }
 
         [Theory]
@@ -490,8 +489,8 @@ namespace Test
         [InlineData("-9223372036854775808", -9223372036854775808)]
         public void NumberToInt64_Valid(string jsonValue, long expectedParsedValue)
         {
-            string json = "{ \"singleInt64\": " + jsonValue + "}";
-            var parsed = TestAllTypes.Parser.ParseJson(json);
+            string json = "singleInt64: " + jsonValue;
+            var parsed = TestAllTypes.Parser.ParseText(json);
             Assert.Equal(expectedParsedValue, parsed.SingleInt64);
         }
 
@@ -504,8 +503,8 @@ namespace Test
         [InlineData("-9223372036854780000")]
         public void NumberToInt64_Invalid(string jsonValue)
         {
-            string json = "{ \"singleInt64\": " + jsonValue + "}";
-            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseJson(json));
+            string json = "singleInt64: " + jsonValue;
+            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseText(json));
         }
 
         [Theory]
@@ -516,8 +515,8 @@ namespace Test
         [InlineData("18446744073709549568", 18446744073709549568UL)]
         public void NumberToUInt64_Valid(string jsonValue, ulong expectedParsedValue)
         {
-            string json = "{ \"singleUint64\": " + jsonValue + "}";
-            var parsed = TestAllTypes.Parser.ParseJson(json);
+            string json = "singleUint64: " + jsonValue;
+            var parsed = TestAllTypes.Parser.ParseText(json);
             Assert.Equal(expectedParsedValue, parsed.SingleUint64);
         }
 
@@ -527,8 +526,8 @@ namespace Test
         [InlineData("18446744073709551616")]
         public void NumberToUInt64_Invalid(string jsonValue)
         {
-            string json = "{ \"singleUint64\": " + jsonValue + "}";
-            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseJson(json));
+            string json = "singleUint64: " + jsonValue;
+            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseText(json));
         }
 
         [Theory]
@@ -549,8 +548,8 @@ namespace Test
         [InlineData("-1.79769e308", -1.79769e308)]
         public void NumberToDouble_Valid(string jsonValue, double expectedParsedValue)
         {
-            string json = "{ \"singleDouble\": " + jsonValue + "}";
-            var parsed = TestAllTypes.Parser.ParseJson(json);
+            string json = "singleDouble: " + jsonValue;
+            var parsed = TestAllTypes.Parser.ParseText(json);
             Assert.Equal(expectedParsedValue, parsed.SingleDouble);
         }
 
@@ -566,8 +565,8 @@ namespace Test
         [InlineData("\u00BD")] // 1/2 as a single Unicode character. Just sanity checking...
         public void NumberToDouble_Invalid(string jsonValue)
         {
-            string json = "{ \"singleDouble\": " + jsonValue + "}";
-            Assert.Throws<InvalidJsonException>(() => TestAllTypes.Parser.ParseJson(json));
+            string json = "singleDouble: " + jsonValue;
+            Assert.Throws<InvalidJsonException>(() => TestAllTypes.Parser.ParseText(json));
         }
 
         [Theory]
@@ -581,8 +580,8 @@ namespace Test
         [InlineData("15e-1", 1.5f)]
         public void NumberToFloat_Valid(string jsonValue, float expectedParsedValue)
         {
-            string json = "{ \"singleFloat\": " + jsonValue + "}";
-            var parsed = TestAllTypes.Parser.ParseJson(json);
+            string json = "singleFloat: " + jsonValue;
+            var parsed = TestAllTypes.Parser.ParseText(json);
             Assert.Equal(expectedParsedValue, parsed.SingleFloat);
         }
 
@@ -596,8 +595,8 @@ namespace Test
         [InlineData("--1", typeof(InvalidJsonException))]
         public void NumberToFloat_Invalid(string jsonValue, System.Type expectedExceptionType)
         {
-            string json = "{ \"singleFloat\": " + jsonValue + "}";
-            Assert.Throws(expectedExceptionType, () => TestAllTypes.Parser.ParseJson(json));
+            string json = "singleFloat: " + jsonValue;
+            Assert.Throws(expectedExceptionType, () => TestAllTypes.Parser.ParseText(json));
         }
 
         // The simplest way of testing that the value has parsed correctly is to reformat it,
@@ -646,7 +645,7 @@ namespace Test
         {
             expectedFormatted = expectedFormatted ?? jsonValue;
             string json = WrapInQuotes(jsonValue);
-            var parsed = Timestamp.Parser.ParseJson(json);
+            var parsed = Timestamp.Parser.ParseText(json);
             Assert.Equal(WrapInQuotes(expectedFormatted), parsed.ToString());
         }
 
@@ -673,39 +672,39 @@ namespace Test
         public void Timestamp_Invalid(string jsonValue)
         {
             string json = WrapInQuotes(jsonValue);
-            Assert.Throws<InvalidProtocolBufferException>(() => Timestamp.Parser.ParseJson(json));
+            Assert.Throws<InvalidProtocolBufferException>(() => Timestamp.Parser.ParseText(json));
         }
 
         [Fact]
         public void StructValue_Null()
         {
-            Assert.Equal(new Value { NullValue = 0 }, Value.Parser.ParseJson("null"));
+            Assert.Equal(new Value { NullValue = 0 }, Value.Parser.ParseText("null"));
         }
 
         [Fact]
         public void StructValue_String()
         {
-            Assert.Equal(new Value { StringValue = "hi" }, Value.Parser.ParseJson("\"hi\""));
+            Assert.Equal(new Value { StringValue = "hi" }, Value.Parser.ParseText("\"hi\""));
         }
 
         [Fact]
         public void StructValue_Bool()
         {
-            Assert.Equal(new Value { BoolValue = true }, Value.Parser.ParseJson("true"));
-            Assert.Equal(new Value { BoolValue = false }, Value.Parser.ParseJson("false"));
+            Assert.Equal(new Value { BoolValue = true }, Value.Parser.ParseText("true"));
+            Assert.Equal(new Value { BoolValue = false }, Value.Parser.ParseText("false"));
         }
 
         [Fact]
         public void StructValue_List()
         {
-            Assert.Equal(Value.ForList(Value.ForNumber(1), Value.ForString("x")), Value.Parser.ParseJson("[1, \"x\"]"));
+            Assert.Equal(Value.ForList(Value.ForNumber(1), Value.ForString("x")), Value.Parser.ParseText("[1, \"x\"]"));
         }
 
         [Fact]
         public void Value_List_WithNullElement()
         {
             var expected = Value.ForList(Value.ForString("x"), Value.ForNull(), Value.ForString("y"));
-            var actual = Value.Parser.ParseJson("[\"x\", null, \"y\"]");
+            var actual = Value.Parser.ParseText("[\"x\", null, \"y\"]");
             Assert.Equal(expected, actual);
         }
 
@@ -713,14 +712,14 @@ namespace Test
         public void StructValue_NullElement()
         {
             var expected = Value.ForStruct(new Struct { Fields = { { "x", Value.ForNull() } } });
-            var actual = Value.Parser.ParseJson("{ \"x\": null }");
+            var actual = Value.Parser.ParseText("x: null");
             Assert.Equal(expected, actual);
         }
 
         [Fact]
         public void ParseListValue()
         {
-            Assert.Equal(new ListValue { Values = { Value.ForNumber(1), Value.ForString("x") } }, ListValue.Parser.ParseJson("[1, \"x\"]"));
+            Assert.Equal(new ListValue { Values = { Value.ForNumber(1), Value.ForString("x") } }, ListValue.Parser.ParseText("[1, \"x\"]"));
         }
 
         [Fact]
@@ -728,14 +727,14 @@ namespace Test
         {
             Assert.Equal(
                 Value.ForStruct(new Struct { Fields = { { "x", Value.ForNumber(1) }, { "y", Value.ForString("z") } } }),
-                Value.Parser.ParseJson("{ \"x\": 1, \"y\": \"z\" }"));
+                Value.Parser.ParseText("x: 1, y: \"z\""));
         }
 
         [Fact]
         public void ParseStruct()
         {
             Assert.Equal(new Struct { Fields = { { "x", Value.ForNumber(1) }, { "y", Value.ForString("z") } } },
-                Struct.Parser.ParseJson("{ \"x\": 1, \"y\": \"z\" }"));
+                Struct.Parser.ParseText("x: 1, y: \"z\""));
         }
 
         // TODO for duration parsing: upper and lower bounds.
@@ -763,7 +762,7 @@ namespace Test
         {
             expectedFormatted = expectedFormatted ?? jsonValue;
             string json = WrapInQuotes(jsonValue);
-            var parsed = Duration.Parser.ParseJson(json);
+            var parsed = Duration.Parser.ParseText(json);
             Assert.Equal(WrapInQuotes(expectedFormatted), parsed.ToString());
         }
 
@@ -793,7 +792,7 @@ namespace Test
         public void Duration_Invalid(string jsonValue)
         {
             string json = WrapInQuotes(jsonValue);
-            Assert.Throws<InvalidProtocolBufferException>(() => Duration.Parser.ParseJson(json));
+            Assert.Throws<InvalidProtocolBufferException>(() => Duration.Parser.ParseText(json));
         }
 
         // Not as many tests for field masks as I'd like; more to be added when we have more
@@ -809,7 +808,7 @@ namespace Test
         public void FieldMask_Valid(string jsonValue, params string[] expectedPaths)
         {
             string json = WrapInQuotes(jsonValue);
-            var parsed = FieldMask.Parser.ParseJson(json);
+            var parsed = FieldMask.Parser.ParseText(json);
             Assert.Equal(expectedPaths, parsed.Paths);
         }
 
@@ -818,7 +817,7 @@ namespace Test
         public void FieldMask_Invalid(string jsonValue)
         {
             string json = WrapInQuotes(jsonValue);
-            Assert.Throws<InvalidProtocolBufferException>(() => FieldMask.Parser.ParseJson(json));
+            Assert.Throws<InvalidProtocolBufferException>(() => FieldMask.Parser.ParseText(json));
         }
 
         [Fact]
@@ -831,7 +830,7 @@ namespace Test
             var json = formatter.Format(original); // This is tested in JsonFormatterTest
             var parser = new TextParser(new TextParser.Settings(10, registry));
             Assert.Equal(original, parser.Parse<Any>(json));
-            string valueFirstJson = "{ \"singleInt32\": 10, \"singleNestedMessage\": { \"bb\": 20 }, \"@type\": \"type.googleapis.com/protobuf_unittest3.TestAllTypes\" }";
+            string valueFirstJson = "singleInt32: 10\nsingleNestedMessage: { bb: 20 }\n@type: \"type.googleapis.com/protobuf_unittest3.TestAllTypes\"";
             Assert.Equal(original, parser.Parse<Any>(valueFirstJson));
         }
 
@@ -842,22 +841,22 @@ namespace Test
             var message = new TestAllTypes { SingleInt32 = 10 };
             var original = Any.Pack(message, "custom.prefix/middle-part");
             var parser = new TextParser(new TextParser.Settings(10, registry));
-            string json = "{ \"@type\": \"custom.prefix/middle-part/protobuf_unittest3.TestAllTypes\", \"singleInt32\": 10 }";
+            string json = "@type: \"custom.prefix/middle-part/protobuf_unittest3.TestAllTypes\"\nsingleInt32\n: 10";
             Assert.Equal(original, parser.Parse<Any>(json));
         }
 
         [Fact]
         public void Any_UnknownType()
         {
-            string json = "{ \"@type\": \"type.googleapis.com/bogus\" }";
-            Assert.Throws<InvalidOperationException>(() => Any.Parser.ParseJson(json));
+            string json = "@type: \"type.googleapis.com/bogus\"";
+            Assert.Throws<InvalidOperationException>(() => Any.Parser.ParseText(json));
         }
 
         [Fact]
         public void Any_NoTypeUrl()
         {
-            string json = "{ \"foo\": \"bar\" }";
-            Assert.Throws<InvalidProtocolBufferException>(() => Any.Parser.ParseJson(json));
+            string json = "foo: \"bar\"";
+            Assert.Throws<InvalidProtocolBufferException>(() => Any.Parser.ParseText(json));
         }
 
         [Fact]
@@ -870,7 +869,7 @@ namespace Test
             var json = formatter.Format(original); // This is tested in JsonFormatterTest
             var parser = new TextParser(new TextParser.Settings(10, registry));
             Assert.Equal(original, parser.Parse<Any>(json));
-            string valueFirstJson = "{ \"value\": \"1673-06-19T12:34:56Z\", \"@type\": \"type.googleapis.com/google.protobuf.Timestamp\" }";
+            string valueFirstJson = "value: \"1673-06-19T12:34:56Z\"\n@type: \"type.googleapis.com/google.protobuf.Timestamp\"";
             Assert.Equal(original, parser.Parse<Any>(valueFirstJson));
         }
 
@@ -892,7 +891,7 @@ namespace Test
         public void DataAfterObject()
         {
             string json = "{} 10";
-            Assert.Throws<InvalidJsonException>(() => TestAllTypes.Parser.ParseJson(json));
+            Assert.Throws<InvalidJsonException>(() => TestAllTypes.Parser.ParseText(json));
         }
 
 
@@ -902,7 +901,7 @@ namespace Test
         public void Bytes_InvalidBase64(string badBase64)
         {
             string json = "singleBytes: \"" + badBase64 + "\"";
-            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseJson(json));
+            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseText(json));
         }
 
         [Theory]
@@ -911,8 +910,8 @@ namespace Test
         [InlineData("100", (ForeignEnum)100)]
         public void EnumValid(string value, ForeignEnum expectedValue)
         {
-            string json = "{ \"singleForeignEnum\": " + value + " }";
-            var parsed = TestAllTypes.Parser.ParseJson(json);
+            string json = "singleForeignEnum: " + value;
+            var parsed = TestAllTypes.Parser.ParseText(json);
             Assert.Equal(new TestAllTypes { SingleForeignEnum = expectedValue }, parsed);
         }
 
@@ -921,33 +920,33 @@ namespace Test
         [InlineData("5.5")]
         public void Enum_Invalid(string value)
         {
-            string json = "{ \"singleForeignEnum\": " + value + " }";
-            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseJson(json));
+            string json = "singleForeignEnum: " + value;
+            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseText(json));
         }
 
         [Fact]
         public void OneofDuplicate_Invalid()
         {
-            string json = "{ \"oneofString\": \"x\", \"oneofUint32\": 10 }";
-            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseJson(json));
+            string json = "oneofString: \"x\"\noneofUint32: 10";
+            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseText(json));
         }
 
         [Fact]
         public void UnknownField_NotIgnored()
         {
-            string json = "{ \"unknownField\": 10, \"singleString\": \"x\" }";
-            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseJson(json));
+            string json = "unknownField: 10\nsingleString: \"x\"";
+            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseText(json));
         }
 
         [Theory]
         [InlineData("5")]
         [InlineData("\"text\"")]
         [InlineData("[0, 1, 2]")]
-        [InlineData("{ \"a\": { \"b\": 10 } }")]
+        [InlineData("a: { b: 10 }")]
         public void UnknownField_Ignored(string value)
         {
             var parser = new TextParser(TextParser.Settings.Default.WithIgnoreUnknownFields(true));
-            string json = "{ \"unknownField\": " + value + ", \"singleString\": \"x\" }";
+            string json = "unknownField: " + value + "\nsingleString: \"x\"";
             var actual = parser.Parse<TestAllTypes>(json);
             var expected = new TestAllTypes { SingleString = "x" };
             Assert.Equal(expected, actual);
