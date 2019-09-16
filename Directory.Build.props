@@ -1,0 +1,5 @@
+<Project>
+  <PropertyGroup>
+    <ProtobufVersion>3.9.1</ProtobufVersion>
+  </PropertyGroup>
+</Project>

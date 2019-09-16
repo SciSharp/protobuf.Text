@@ -153,7 +153,7 @@ namespace Protobuf.Text
             {
                 throw InvalidTextProtocolBufferException.JsonRecursionLimitExceeded();
             }
-            if (message.Descriptor.IsWellKnownType)
+            if (message.Descriptor.IsWellKnownType())
             {
                 Action<TextParser, IMessage, TextTokenizer> handler;
                 if (WellKnownTypeHandlers.TryGetValue(message.Descriptor.FullName, out handler))
@@ -340,7 +340,7 @@ namespace Protobuf.Text
             {
                 // Parse wrapper types as their constituent types.
                 // TODO: What does this mean for null?
-                if (field.MessageType.IsWrapperType)
+                if (field.MessageType.IsWrapperType())
                 {
                     field = field.MessageType.Fields[WrappersReflection.WrapperValueFieldNumber];
                     fieldType = field.FieldType;
@@ -507,7 +507,7 @@ namespace Protobuf.Text
             // The check for the property depth protects us from nested Any values which occur before the type URL
             // for *this* Any.
             while (token.Type != TokenType.Name ||
-                token.StringValue != JsonFormatter.AnyTypeUrlField ||
+                token.StringValue != ProtobufAdapter.AnyTypeUrlField ||
                 tokenizer.ObjectDepth != typeUrlObjectDepth)
             {
                 tokens.Add(token);
@@ -539,7 +539,7 @@ namespace Protobuf.Text
             // as normal. Our original tokenizer should end up at the end of the object.
             var replay = TextTokenizer.FromReplayedTokens(tokens, tokenizer);
             var body = descriptor.Parser.CreateTemplate();
-            if (descriptor.IsWellKnownType)
+            if (descriptor.IsWellKnownType())
             {
                 MergeWellKnownTypeAnyBody(body, replay);
             }
@@ -562,9 +562,9 @@ namespace Protobuf.Text
             var token = tokenizer.Next(); // Definitely start-object; checked in previous method
             token = tokenizer.Next();
             // TODO: What about an absent Int32Value, for example?
-            if (token.Type != TokenType.Name || token.StringValue != JsonFormatter.AnyWellKnownTypeValueField)
+            if (token.Type != TokenType.Name || token.StringValue != ProtobufAdapter.AnyWellKnownTypeValueField)
             {
-                throw new InvalidTextProtocolBufferException($"Expected '{JsonFormatter.AnyWellKnownTypeValueField}' property for well-known type Any body");
+                throw new InvalidTextProtocolBufferException($"Expected '{ProtobufAdapter.AnyWellKnownTypeValueField}' property for well-known type Any body");
             }
             Merge(body, tokenizer);
             token = tokenizer.Next();
@@ -855,7 +855,7 @@ namespace Protobuf.Text
                     timestamp += new Duration { Nanos = nanosToAdd, Seconds = secondsToAdd };
                     // The resulting timestamp after offset change would be out of our expected range. Currently the Timestamp message doesn't validate this
                     // anywhere, but we shouldn't parse it.
-                    if (timestamp.Seconds < Timestamp.UnixSecondsAtBclMinValue || timestamp.Seconds > Timestamp.UnixSecondsAtBclMaxValue)
+                    if (timestamp.Seconds < ProtobufAdapter.UnixSecondsAtBclMinValue || timestamp.Seconds > ProtobufAdapter.UnixSecondsAtBclMaxValue)
                     {
                         throw new InvalidTextProtocolBufferException("Invalid Timestamp value: " + token.StringValue);
                     }
@@ -900,7 +900,7 @@ namespace Protobuf.Text
                     int parsedFraction = int.Parse(subseconds.Substring(1));
                     nanos = parsedFraction * SubsecondScalingFactors[subseconds.Length] * multiplier;
                 }
-                if (!Duration.IsNormalized(seconds, nanos))
+                if (!ProtobufAdapter.IsNormalized(seconds, nanos))
                 {
                     throw new InvalidTextProtocolBufferException($"Invalid Duration value: {token.StringValue}");
                 }
@@ -994,7 +994,7 @@ namespace Protobuf.Text
             // valid language elements.
             static Settings()
             {
-                Default = new Settings(CodedInputStream.DefaultRecursionLimit);
+                Default = new Settings(ProtobufAdapter.DefaultRecursionLimit);
             }
 
             /// <summary>

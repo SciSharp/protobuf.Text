@@ -35,6 +35,8 @@ using System.Collections.Generic;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Google.Protobuf.Reflection;
+using static Google.Protobuf.Reflection.MessageDescriptor;
+using System.Collections.ObjectModel;
 
 namespace Protobuf.Text
 {
@@ -48,6 +50,20 @@ namespace Protobuf.Text
 
     internal static class ProtobufAdapter
     {
+        internal const string AnyTypeUrlField = "@type";
+        internal const string AnyDiagnosticValueField = "@value";
+        internal const string AnyWellKnownTypeValueField = "value";
+        internal const string TypeUrlPrefix = "type.googleapis.com";
+        private const long BclSecondsAtUnixEpoch = 62135596800;
+        internal const long UnixSecondsAtBclMaxValue = 253402300799;
+        internal const long UnixSecondsAtBclMinValue = -BclSecondsAtUnixEpoch;
+
+        public const int NanosecondsPerSecond = 1000000000;
+        internal const int MaxNanoseconds = NanosecondsPerSecond - 1;
+        internal const int MinNanoseconds = -NanosecondsPerSecond + 1;
+
+        internal const int DefaultRecursionLimit = 100;
+
         private static readonly HashSet<string> WellKnownTypeNames = new HashSet<string>
         {
             "google/protobuf/any.proto",
@@ -62,9 +78,48 @@ namespace Protobuf.Text
             "google/protobuf/type.proto",
         };
 
-        public static bool IsWellKnownType(this MessageDescriptor messageDescriptor)
+        internal static bool IsWellKnownType(this IDescriptor descriptor)
         {
-            return messageDescriptor.File.Package == "google.protobuf" && WellKnownTypeNames.Contains(File.Name);
+            var file = descriptor.File;
+            return file.Package == "google.protobuf" && WellKnownTypeNames.Contains(file.Name);
+        }
+
+        internal static bool IsWrapperType(this IDescriptor descriptor)
+        {
+            var file = descriptor.File;
+            return file.Package == "google.protobuf" && file.Name == "google/protobuf/wrappers.proto";
+        }
+
+        internal static IDictionary<string, FieldDescriptor> ByJsonName(this FieldCollection fields)
+        {
+            var map = new Dictionary<string, FieldDescriptor>();
+
+            foreach (var field in fields.InFieldNumberOrder())
+            {
+                map[field.Name] = field;
+                map[field.JsonName] = field;
+            }
+
+            return new ReadOnlyDictionary<string, FieldDescriptor>(map);
+        }
+
+        internal static IMessage CreateTemplate(this MessageParser parser)
+        {
+            var method = parser.GetType().GetMethod("CreateTemplate");
+            return (IMessage)method.Invoke(parser, new object[0]);
+        }
+
+        internal static bool IsNormalized(long seconds, int nanoseconds)
+        {
+            // Simple boundaries
+            if (seconds < Duration.MinSeconds || seconds > Duration.MaxSeconds ||
+                nanoseconds < MinNanoseconds || nanoseconds > MaxNanoseconds)
+            {
+                return false;
+            }
+            // We only have a problem is one is strictly negative and the other is
+            // strictly positive.
+            return Math.Sign(seconds) * Math.Sign(nanoseconds) != -1;
         }
     }
 }
