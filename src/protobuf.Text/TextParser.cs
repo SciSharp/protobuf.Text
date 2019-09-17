@@ -165,17 +165,21 @@ namespace Protobuf.Text
                 }
                 // Well-known types with no special handling continue in the normal way.
             }
+
             var token = tokenizer.Next();
+            
             if (token.Type != TokenType.StartObject)
             {
                 throw new InvalidTextProtocolBufferException("Expected an object");
             }
+
             var descriptor = message.Descriptor;
             var jsonFieldMap = descriptor.Fields.ByJsonName();
             // All the oneof fields we've already accounted for - we can only see each of them once.
             // The set is created lazily to avoid the overhead of creating a set for every message
             // we parsed, when oneofs are relatively rare.
             HashSet<OneofDescriptor> seenOneofs = null;
+
             while (true)
             {
                 token = tokenizer.Next();
@@ -195,6 +199,7 @@ namespace Protobuf.Text
                 }
                 string name = token.StringValue;
                 FieldDescriptor field;
+
                 if (jsonFieldMap.TryGetValue(name, out field))
                 {
                     if (field.ContainingOneof != null)
@@ -227,6 +232,7 @@ namespace Protobuf.Text
         private void MergeField(IMessage message, FieldDescriptor field, TextTokenizer tokenizer)
         {
             var token = tokenizer.Next();
+
             if (token.Type == TokenType.Null)
             {
                 // Clear the field if we see a null token, unless it's for a singular field of type
@@ -240,8 +246,7 @@ namespace Protobuf.Text
                 }
             }
 
-            if (token.Type != TokenType.StartObject)
-                tokenizer.PushBack(token);
+            tokenizer.PushBack(token);
 
             if (field.IsMap)
             {
@@ -328,6 +333,7 @@ namespace Protobuf.Text
         private object ParseSingleValue(FieldDescriptor field, TextTokenizer tokenizer)
         {
             var token = tokenizer.Next();
+            
             if (token.Type == TokenType.Null)
             {
                 // TODO: In order to support dynamic messages, we should really build this up

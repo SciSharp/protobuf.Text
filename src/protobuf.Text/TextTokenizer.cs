@@ -223,6 +223,27 @@ namespace Protobuf.Text
                 return nextToken;
             }
 
+            char? ReadNoisyContent()
+            {
+                while (true) //comment line
+                {
+                    var next = reader.Read();
+
+                    if (next.Value == '#')
+                    {
+                        reader.ReadLine();
+                        continue;
+                    }
+
+                    if (next.Value == ' ' || next.Value == '\r' || next.Value == '\n')
+                    {
+                        continue;
+                    }
+                    
+                    return next;
+                }
+            }
+
             /// <remarks>
             /// This method essentially just loops through characters skipping whitespace, validating and
             /// changing state (e.g. from ObjectBeforeColon to ObjectAfterColon)
@@ -236,9 +257,11 @@ namespace Protobuf.Text
                 {
                     throw new InvalidOperationException("Next() called after end of document");
                 }
+
                 while (true)
                 {
                     var next = reader.Read();
+
                     if (next == null)
                     {
                         //ValidateState(State.ExpectedEndOfDocument, "Unexpected end of document in state: ");
@@ -248,6 +271,10 @@ namespace Protobuf.Text
 
                     if (state == State.StartOfDocument)
                     {
+                        reader.PushBack(next.Value);
+
+                        next = ReadNoisyContent();
+
                         if (next.Value == '{')
                         {
                             state = State.ArrayStart;
@@ -263,7 +290,7 @@ namespace Protobuf.Text
                             
                             containerStack.Push(ContainerType.Object);
 
-                            var name = ReadString(true);
+                            var name = ReadName();
                             
                             if (reader.LastChar == null)
                             {
@@ -287,10 +314,22 @@ namespace Protobuf.Text
                         if (char.IsWhiteSpace(next.Value))
                             continue;
 
+                        if (next.Value != '}')
+                        {
+                            reader.PushBack(next.Value);
+
+                            var name = ReadName();
+                    
+                            state = State.ObjectAfterColon;
+                            return TextToken.Name(name);
+                        }
+                    }
+                    else if (state == State.ObjectStart)
+                    {
+                        next = ReadNoisyContent();
                         reader.PushBack(next.Value);
 
-                        var name = ReadString();
-                
+                        var name = ReadName();                
                         state = State.ObjectAfterColon;
                         return TextToken.Name(name);
                     }
@@ -311,18 +350,9 @@ namespace Protobuf.Text
                             ValidateState(State.ObjectAfterProperty | State.ArrayAfterValue, "Invalid state to read a comma: ");
                             state = state == State.ObjectAfterProperty ? State.ObjectAfterComma : State.ArrayAfterComma;
                             break;
+                        case '\'':
                         case '"':
-                            string stringValue = ReadString();
-                            if ((state & (State.ObjectStart | State.ObjectAfterComma)) != 0)
-                            {
-                                state = State.ObjectBeforeColon;
-                                return TextToken.Name(stringValue);
-                            }
-                            else
-                            {
-                                ValidateAndModifyStateForValue("Invalid state to read a double quote: ");
-                                return TextToken.Value(stringValue);
-                            }
+                            return GetValueString(next.Value);
                         case '{':
                             ValidateState(ValueStates, "Invalid state to read an open brace: ");
                             state = State.ObjectStart;
@@ -368,9 +398,28 @@ namespace Protobuf.Text
                             ValidateAndModifyStateForValue("Invalid state to read a number token: ");
                             return TextToken.Value(number);
                         default:
-                            throw new InvalidTextException("Invalid first character of token: " + next.Value);
+                            reader.PushBack(next.Value);
+                            return GetValueString(ReadName());
                     }
                 }
+            }
+
+            private TextToken GetValueString(string stringValue)
+            {
+                if ((state & (State.ObjectStart | State.ObjectAfterComma)) != 0)
+                {
+                    state = State.ObjectBeforeColon;
+                    return TextToken.Name(stringValue);
+                }
+                else
+                {
+                    ValidateAndModifyStateForValue("Invalid state to read a double quote: ");
+                    return TextToken.Value(stringValue);
+                }
+            }
+            private TextToken GetValueString(char endChar)
+            {
+                return GetValueString(ReadString(endChar));                
             }
 
             private void ValidateState(State validStates, string errorPrefix)
@@ -383,13 +432,40 @@ namespace Protobuf.Text
 
             private string ReadString()
             {
-                return ReadString(false);
+                return ReadString('"');
+            }
+
+            private string ReadName()
+            {
+                var value = new StringBuilder();
+
+                while (true)
+                {
+                    var c = reader.ReadChar();
+
+                    if (c == '\0' || c == ':' || c == ' ')
+                    {
+                        return value.ToString();
+                    }
+
+                    if (c == '\\')
+                    {
+                        c = ReadEscapedCharacter();
+                        // bytes string
+                        if (char.IsDigit(c))
+                        {
+                            value.Append('\\');
+                        }
+                    }
+
+                    value.Append(c);
+                }
             }
 
             /// <summary>
             /// Reads a string token. It is assumed that the opening " has already been read.
             /// </summary>
-            private string ReadString(bool ignoreQuote)
+            private string ReadString(char endChar)
             {
                 var value = new StringBuilder();
                 bool haveHighSurrogate = false;
@@ -408,11 +484,8 @@ namespace Protobuf.Text
                         throw reader.CreateException(string.Format(CultureInfo.InvariantCulture, "Invalid character in string literal: U+{0:x4}", (int) c));
                     }
 
-                    if (c == '"')
+                    if (c == endChar)
                     {
-                        if (ignoreQuote)
-                            continue;
-                        
                         if (haveHighSurrogate)
                         {
                             throw reader.CreateException("Invalid use of surrogate pair code units");
@@ -437,6 +510,7 @@ namespace Protobuf.Text
                     {
                         throw reader.CreateException("Invalid use of surrogate pair code units");
                     }
+
                     haveHighSurrogate = char.IsHighSurrogate(c);
                     value.Append(c);
                 }
@@ -863,6 +937,11 @@ namespace Protobuf.Text
                 {
                     // TODO: Keep track of and use the location.
                     return new InvalidTextException(message);
+                }
+
+                internal string ReadLine()
+                {
+                    return reader.ReadLine();
                 }
             }
         }
