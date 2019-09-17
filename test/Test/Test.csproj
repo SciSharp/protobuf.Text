@@ -15,4 +15,9 @@
   <ItemGroup>
     <EmbeddedResource Include="testprotos.pb" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="Config\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>  
+  </ItemGroup>
 </Project>
