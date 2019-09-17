@@ -16,9 +16,6 @@ namespace Protobuf.Text
             private static readonly Dictionary<System.Type, Dictionary<object, string>> dictionaries
                 = new Dictionary<System.Type, Dictionary<object, string>>();
 
-            private static readonly Dictionary<System.Type, Dictionary<string, object>> valueDictionaries
-                = new Dictionary<System.Type, Dictionary<string, object>>();
-
             internal static string GetOriginalName(object value)
             {
                 var enumType = value.GetType();
@@ -37,36 +34,6 @@ namespace Protobuf.Text
                 nameMapping.TryGetValue(value, out originalName);
                 return originalName;
             }
-
-            internal static object GetValueByOriginalName(Type enumType, string name)
-            {
-                Dictionary<string, object> valueMapping;
-
-                lock (valueDictionaries)
-                {
-                    if (!valueDictionaries.TryGetValue(enumType, out valueMapping))
-                    {
-                        valueMapping = GetValueMapping(enumType);
-                        valueDictionaries[enumType] = valueMapping;
-                    }
-                }
-
-                object value;
-                // If this returns false, originalName will be null, which is what we want.
-                valueMapping.TryGetValue(name, out value);
-                return value;
-            }
-
-            private static Dictionary<string, object> GetValueMapping(System.Type enumType) =>
-                enumType.GetTypeInfo().DeclaredFields
-                    .Where(f => f.IsStatic)
-                    .Where(f => f.GetCustomAttributes<OriginalNameAttribute>()
-                                 .FirstOrDefault()?.PreferredAlias ?? true)
-                    .ToDictionary(f => f.GetCustomAttributes<OriginalNameAttribute>()
-                                        .FirstOrDefault()
-                                        // If the attribute hasn't been applied, fall back to the name of the field.
-                                        ?.Name ?? f.Name,
-                                  f => f.GetValue(null), StringComparer.OrdinalIgnoreCase);
 
             private static Dictionary<object, string> GetNameMapping(System.Type enumType) =>
                 enumType.GetTypeInfo().DeclaredFields

@@ -266,21 +266,52 @@ namespace Protobuf.Text
         private void MergeRepeatedField(IMessage message, FieldDescriptor field, TextTokenizer tokenizer)
         {
             var token = tokenizer.Next();
+            var flatRepeatedMode = false;
+
             if (token.Type != TokenType.StartArray)
             {
-                throw new InvalidTextProtocolBufferException("Repeated field value was not an array. Token type: " + token.Type);
+                tokenizer.PushBack(token);
+                flatRepeatedMode = true;
             }
 
             IList list = (IList) field.Accessor.GetValue(message);
+
             while (true)
             {
                 token = tokenizer.Next();
-                if (token.Type == TokenType.EndArray)
+
+                if (flatRepeatedMode)
                 {
-                    return;
+                    if (token.Type == TokenType.EndObject || token.Type == TokenType.EndDocument)
+                    {
+                        // end of the repeat
+                        tokenizer.PushBack(token);
+                        return;
+                    }
+
+                    if (token.Type == TokenType.Name)
+                    {
+                        if (!token.StringValue.Equals(field.Name, StringComparison.OrdinalIgnoreCase))
+                        {
+                            // end of the repeat
+                            return;
+                        }
+                        // read the start of the object
+                        token = tokenizer.Next();
+                    }
                 }
+                else
+                {
+                    if (token.Type == TokenType.EndArray)
+                    {
+                        return;
+                    }
+                }
+
                 tokenizer.PushBack(token);
+
                 object value = ParseSingleValue(field, tokenizer);
+
                 if (value == null)
                 {
                     throw new InvalidTextProtocolBufferException("Repeated field elements cannot be null");
@@ -733,14 +764,14 @@ namespace Protobuf.Text
                     ValidateInfinityAndNan(text, float.IsPositiveInfinity(f), float.IsNegativeInfinity(f), float.IsNaN(f));
                     return f;
                 case FieldType.Enum:
-                    var enumValue = OriginalEnumValueHelper.GetValueByOriginalName(field.EnumType.ClrType, text);
+                    var enumValue = field.EnumType.FindValueByName(text);
 
                     if (enumValue == null)
                     {
                         throw new InvalidTextProtocolBufferException($"Invalid enum value: {text} for enum type: {field.EnumType.FullName}");
                     }
                     // Just return it as an int, and let the CLR convert it.
-                    return enumValue;
+                    return enumValue.Number;
                 case FieldType.Bool:
                     if ("true".Equals(text, StringComparison.OrdinalIgnoreCase))
                         return true;

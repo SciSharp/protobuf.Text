@@ -327,11 +327,15 @@ namespace Protobuf.Text
                     else if (state == State.ObjectStart)
                     {
                         next = ReadNoisyContent();
-                        reader.PushBack(next.Value);
 
-                        var name = ReadName();                
-                        state = State.ObjectAfterColon;
-                        return TextToken.Name(name);
+                        if (next.Value != '}')
+                        {
+                            reader.PushBack(next.Value);
+
+                            var name = ReadName();                
+                            state = State.ObjectAfterColon;
+                            return TextToken.Name(name);
+                        }
                     }
 
                     switch (next.Value)
@@ -443,7 +447,7 @@ namespace Protobuf.Text
                 {
                     var c = reader.ReadChar();
 
-                    if (c == '\0' || c == ':' || c == ' ' || c == '\n')
+                    if (c == '\0' || c == ':' || c == ' ' || c == '\r' || c == '\n')
                     {
                         return value.ToString();
                     }
