@@ -733,13 +733,14 @@ namespace Protobuf.Text
                     ValidateInfinityAndNan(text, float.IsPositiveInfinity(f), float.IsNegativeInfinity(f), float.IsNaN(f));
                     return f;
                 case FieldType.Enum:
-                    var enumValue = field.EnumType.FindValueByName(text);
+                    var enumValue = OriginalEnumValueHelper.GetValueByOriginalName(field.EnumType.ClrType, text);
+
                     if (enumValue == null)
                     {
                         throw new InvalidTextProtocolBufferException($"Invalid enum value: {text} for enum type: {field.EnumType.FullName}");
                     }
                     // Just return it as an int, and let the CLR convert it.
-                    return enumValue.Number;
+                    return enumValue;
                 case FieldType.Bool:
                     if ("true".Equals(text, StringComparison.OrdinalIgnoreCase))
                         return true;

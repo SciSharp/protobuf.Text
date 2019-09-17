@@ -443,7 +443,7 @@ namespace Protobuf.Text
                 {
                     var c = reader.ReadChar();
 
-                    if (c == '\0' || c == ':' || c == ' ')
+                    if (c == '\0' || c == ':' || c == ' ' || c == '\n')
                     {
                         return value.ToString();
                     }
