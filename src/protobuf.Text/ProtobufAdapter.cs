@@ -37,6 +37,7 @@ using Google.Protobuf.WellKnownTypes;
 using Google.Protobuf.Reflection;
 using static Google.Protobuf.Reflection.MessageDescriptor;
 using System.Collections.ObjectModel;
+using System.Reflection;
 
 namespace Protobuf.Text
 {
@@ -105,7 +106,11 @@ namespace Protobuf.Text
 
         internal static IMessage CreateTemplate(this MessageParser parser)
         {
-            var method = parser.GetType().GetMethod("CreateTemplate");
+            var method = parser.GetType().GetMethod("CreateTemplate", BindingFlags.NonPublic | BindingFlags.Instance);
+
+            if (method == null)
+                throw new Exception("Cannot find method 'CreateTemplate'");
+
             return (IMessage)method.Invoke(parser, new object[0]);
         }
 

@@ -105,7 +105,7 @@ namespace Protobuf.Text
         /// <remarks>This implementation provides single-token buffering, and calls <see cref="NextImpl"/> if there is no buffered token.</remarks>
         /// <returns>The next token in the stream. This is never null.</returns>
         /// <exception cref="InvalidOperationException">This method is called after an EndDocument token has been returned</exception>
-        /// <exception cref="InvalidJsonException">The input text does not comply with RFC 7159</exception>
+        /// <exception cref="InvalidTextException">The input text does not comply with RFC 7159</exception>
         internal virtual TextToken Next()
         {
             TextToken tokenToReturn;
@@ -135,7 +135,7 @@ namespace Protobuf.Text
         /// to this if it doesn't have a buffered token.)
         /// </summary>
         /// <exception cref="InvalidOperationException">This method is called after an EndDocument token has been returned</exception>
-        /// <exception cref="InvalidJsonException">The input text does not comply with RFC 7159</exception>
+        /// <exception cref="InvalidTextException">The input text does not comply with RFC 7159</exception>
         protected abstract TextToken NextImpl();
 
         /// <summary>
@@ -263,7 +263,19 @@ namespace Protobuf.Text
                             
                             containerStack.Push(ContainerType.Object);
 
-                            var name = ReadString();
+                            var name = ReadString(true);
+                            
+                            if (reader.LastChar == null)
+                            {
+                                // single value
+                                state = State.ExpectedEndOfDocument;
+                                
+                                if ("null".Equals(name, StringComparison.OrdinalIgnoreCase))
+                                    return TextToken.Null;
+                                else
+                                    return TextToken.Value(name);
+                            }
+
                             PushBack(TextToken.Name(name));
 
                             state = State.ObjectStart;
@@ -369,31 +381,54 @@ namespace Protobuf.Text
                 }
             }
 
+            private string ReadString()
+            {
+                return ReadString(false);
+            }
+
             /// <summary>
             /// Reads a string token. It is assumed that the opening " has already been read.
             /// </summary>
-            private string ReadString()
+            private string ReadString(bool ignoreQuote)
             {
                 var value = new StringBuilder();
                 bool haveHighSurrogate = false;
+                
                 while (true)
                 {
-                    char c = reader.ReadOrFail("Unexpected end of text while reading string");
+                    char c = reader.ReadChar();
+
+                    if (c == '\0' || c == ':')
+                    {
+                        return value.ToString();
+                    }
+
                     if (c < ' ')
                     {
                         throw reader.CreateException(string.Format(CultureInfo.InvariantCulture, "Invalid character in string literal: U+{0:x4}", (int) c));
                     }
-                    if (c == '"' || c == ':')
+
+                    if (c == '"')
                     {
+                        if (ignoreQuote)
+                            continue;
+                        
                         if (haveHighSurrogate)
                         {
                             throw reader.CreateException("Invalid use of surrogate pair code units");
                         }
+
                         return value.ToString();
                     }
+
                     if (c == '\\')
                     {
                         c = ReadEscapedCharacter();
+                        // bytes string
+                        if (char.IsDigit(c))
+                        {
+                            value.Append('\\');
+                        }
                     }
                     // TODO: Consider only allowing surrogate pairs that are either both escaped,
                     // or both not escaped. It would be a very odd text stream that contained a "lone" high surrogate
@@ -412,7 +447,8 @@ namespace Protobuf.Text
             /// </summary>
             private char ReadEscapedCharacter()
             {
-                char c = reader.ReadOrFail("Unexpected end of text while reading character escape sequence");
+                char c = reader.ReadChar();
+
                 switch (c)
                 {
                     case 'n':
@@ -434,7 +470,7 @@ namespace Protobuf.Text
                     case 'u':
                         return ReadUnicodeEscape();
                     default:
-                        throw reader.CreateException(string.Format(CultureInfo.InvariantCulture, "Invalid character in character escape sequence: U+{0:x4}", (int) c));
+                        return c;
                 }
             }
 
@@ -446,7 +482,8 @@ namespace Protobuf.Text
                 int result = 0;
                 for (int i = 0; i < 4; i++)
                 {
-                    char c = reader.ReadOrFail("Unexpected end of text while reading Unicode escape sequence");
+                    char c = reader.ReadChar();
+
                     int nybble;
                     if (c >= '0' && c <= '9')
                     {
@@ -522,8 +559,10 @@ namespace Protobuf.Text
                 // TODO: What exception should we throw if the value can't be represented as a double?
                 try
                 {
-                    return double.Parse(builder.ToString(),
-                        NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent,
+                    var strNumber = builder.ToString();
+                    
+                    return double.Parse(strNumber,
+                        NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint,
                         CultureInfo.InvariantCulture);
                 }
                 catch (OverflowException)
@@ -534,7 +573,8 @@ namespace Protobuf.Text
 
             private char? ReadInt(StringBuilder builder)
             {
-                char first = reader.ReadOrFail("Invalid numeric literal");
+                char first = reader.ReadChar();
+
                 if (first < '0' || first > '9')
                 {
                     throw reader.CreateException("Invalid numeric literal");
@@ -768,6 +808,16 @@ namespace Protobuf.Text
                 /// </summary>
                 private char? nextChar;
 
+                private char? lastChar;
+
+                internal char? LastChar
+                {
+                    get
+                    {
+                        return lastChar;
+                    }
+                }
+
                 /// <summary>
                 /// Returns the next character in the stream, or null if we have reached the end.
                 /// </summary>
@@ -778,18 +828,21 @@ namespace Protobuf.Text
                     {
                         char? tmp = nextChar;
                         nextChar = null;
+                        lastChar = tmp;
                         return tmp;
                     }
+
                     int next = reader.Read();
-                    return next == -1 ? null : (char?) next;
+                    lastChar = next == -1 ? null : (char?) next;
+                    return lastChar;
                 }
 
-                internal char ReadOrFail(string messageOnFailure)
+                internal char ReadChar()
                 {
                     char? next = Read();
                     if (next == null)
                     {
-                        throw CreateException(messageOnFailure);
+                        return '\0';
                     }
                     return next.Value;
                 }

@@ -97,7 +97,7 @@ namespace Protobuf.Text
                 if (value == null)
                     continue;
 
-                PrintField(field, value, generator);                
+                PrintField(field, value, generator);
             }
         }
 
@@ -193,13 +193,10 @@ namespace Protobuf.Text
                 generator.Print(EscapeText((string)value));
                 generator.Print("\"");
             }
-            else if (value is IConvertible)
-            {
-                generator.Print(((IConvertible)value).ToString(CultureInfo.InvariantCulture));
-            }
             else if (value is Enum)
             {
-                generator.Print(((EnumValueDescriptor)value).Name);
+                var name = OriginalEnumValueHelper.GetOriginalName(value);
+                generator.Print(name);
             }
             else if (value is float || value is double)
             {
@@ -214,6 +211,15 @@ namespace Protobuf.Text
                 {
                     generator.Print(text);
                 }
+            }
+            else if (value is Single)
+            {
+                string text = ((IConvertible)value).ToString(CultureInfo.InvariantCulture);
+                generator.Print(text);
+            }
+            else if (value is IFormattable)
+            {
+                generator.Print(((IFormattable)value).ToString("d", CultureInfo.InvariantCulture));
             }
             else if (value is IMessage)
             {
@@ -251,7 +257,7 @@ namespace Protobuf.Text
                 case FieldType.Fixed64:
                     // The simple Object.ToString converts using the current culture.
                     // We want to always use the invariant culture so it's predictable.
-                    generator.Print(((IConvertible)value).ToString(CultureInfo.InvariantCulture));
+                    generator.Print(((IFormattable)value).ToString("d", CultureInfo.InvariantCulture));
                     break;
                 case FieldType.Bool:
                     // Explicitly use the Java true/false
@@ -370,7 +376,151 @@ namespace Protobuf.Text
                 }
             }
             return builder.ToString();
-        }        
+        }
+
+        /// <summary>
+        /// Performs string unescaping from C style (octal, hex, form feeds, tab etc) into a byte string.
+        /// </summary>
+        public static ByteString UnescapeBytes(string input)
+        {
+            byte[] result = new byte[input.Length];
+            int pos = 0;
+            for (int i = 0; i < input.Length; i++)
+            {
+                char c = input[i];
+                if (c > 127 || c < 32)
+                {
+                    throw new FormatException("Escaped string must only contain ASCII");
+                }
+                if (c != '\\')
+                {
+                    result[pos++] = (byte) c;
+                    continue;
+                }
+                if (i + 1 >= input.Length)
+                {
+                    throw new FormatException("Invalid escape sequence: '\\' at end of string.");
+                }
+
+                i++;
+                c = input[i];
+                if (c >= '0' && c <= '7')
+                {
+                    // Octal escape. 
+                    int code = ParseDigit(c);
+                    if (i + 1 < input.Length && IsOctal(input[i + 1]))
+                    {
+                        i++;
+                        code = code*8 + ParseDigit(input[i]);
+                    }
+                    if (i + 1 < input.Length && IsOctal(input[i + 1]))
+                    {
+                        i++;
+                        code = code*8 + ParseDigit(input[i]);
+                    }
+                    result[pos++] = (byte) code;
+                }
+                else
+                {
+                    switch (c)
+                    {
+                        case 'a':
+                            result[pos++] = 0x07;
+                            break;
+                        case 'b':
+                            result[pos++] = (byte) '\b';
+                            break;
+                        case 'f':
+                            result[pos++] = (byte) '\f';
+                            break;
+                        case 'n':
+                            result[pos++] = (byte) '\n';
+                            break;
+                        case 'r':
+                            result[pos++] = (byte) '\r';
+                            break;
+                        case 't':
+                            result[pos++] = (byte) '\t';
+                            break;
+                        case 'v':
+                            result[pos++] = 0x0b;
+                            break;
+                        case '\\':
+                            result[pos++] = (byte) '\\';
+                            break;
+                        case '\'':
+                            result[pos++] = (byte) '\'';
+                            break;
+                        case '"':
+                            result[pos++] = (byte) '\"';
+                            break;
+
+                        case 'x':
+                            // hex escape
+                            int code;
+                            if (i + 1 < input.Length && IsHex(input[i + 1]))
+                            {
+                                i++;
+                                code = ParseDigit(input[i]);
+                            }
+                            else
+                            {
+                                throw new FormatException("Invalid escape sequence: '\\x' with no digits");
+                            }
+                            if (i + 1 < input.Length && IsHex(input[i + 1]))
+                            {
+                                ++i;
+                                code = code*16 + ParseDigit(input[i]);
+                            }
+                            result[pos++] = (byte) code;
+                            break;
+
+                        default:
+                            throw new FormatException("Invalid escape sequence: '\\" + c + "'");
+                    }
+                }
+            }
+
+            return ByteString.CopyFrom(result, 0, pos);
+        }
+
+        /// <summary>
+        /// Interprets a character as a digit (in any base up to 36) and returns the
+        /// numeric value.
+        /// </summary>
+        private static int ParseDigit(char c)
+        {
+            if ('0' <= c && c <= '9')
+            {
+                return c - '0';
+            }
+            else if ('a' <= c && c <= 'z')
+            {
+                return c - 'a' + 10;
+            }
+            else
+            {
+                return c - 'A' + 10;
+            }
+        }
+
+        /// <summary>
+        /// Tests a character to see if it's an octal digit.
+        /// </summary>
+        private static bool IsOctal(char c)
+        {
+            return '0' <= c && c <= '7';
+        }
+
+        /// <summary>
+        /// Tests a character to see if it's a hex digit.
+        /// </summary>
+        private static bool IsHex(char c)
+        {
+            return ('0' <= c && c <= '9') ||
+                   ('a' <= c && c <= 'f') ||
+                   ('A' <= c && c <= 'F');
+        }
 
         /*
 
@@ -503,45 +653,6 @@ namespace Protobuf.Text
                 return (long) result;
             }
         }
-
-        /// <summary>
-        /// Tests a character to see if it's an octal digit.
-        /// </summary>
-        private static bool IsOctal(char c)
-        {
-            return '0' <= c && c <= '7';
-        }
-
-        /// <summary>
-        /// Tests a character to see if it's a hex digit.
-        /// </summary>
-        private static bool IsHex(char c)
-        {
-            return ('0' <= c && c <= '9') ||
-                   ('a' <= c && c <= 'f') ||
-                   ('A' <= c && c <= 'F');
-        }
-
-        /// <summary>
-        /// Interprets a character as a digit (in any base up to 36) and returns the
-        /// numeric value.
-        /// </summary>
-        private static int ParseDigit(char c)
-        {
-            if ('0' <= c && c <= '9')
-            {
-                return c - '0';
-            }
-            else if ('a' <= c && c <= 'z')
-            {
-                return c - 'a' + 10;
-            }
-            else
-            {
-                return c - 'A' + 10;
-            }
-        }
-
         
 
         public static void Merge(string text, IBuilder builder)

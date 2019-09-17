@@ -239,7 +239,9 @@ namespace Protobuf.Text
                     return;
                 }
             }
-            tokenizer.PushBack(token);
+
+            if (token.Type != TokenType.StartObject)
+                tokenizer.PushBack(token);
 
             if (field.IsMap)
             {
@@ -385,7 +387,7 @@ namespace Protobuf.Text
         /// </summary>
         /// <typeparam name="T">The type of message to create.</typeparam>
         /// <param name="json">The JSON to parse.</param>
-        /// <exception cref="InvalidJsonException">The JSON does not comply with RFC 7159</exception>
+        /// <exception cref="InvalidTextException">The JSON does not comply with RFC 7159</exception>
         /// <exception cref="InvalidTextProtocolBufferException">The JSON does not represent a Protocol Buffers message correctly</exception>
         public T Parse<T>(string json) where T : IMessage, new()
         {
@@ -398,7 +400,7 @@ namespace Protobuf.Text
         /// </summary>
         /// <typeparam name="T">The type of message to create.</typeparam>
         /// <param name="jsonReader">Reader providing the JSON to parse.</param>
-        /// <exception cref="InvalidJsonException">The JSON does not comply with RFC 7159</exception>
+        /// <exception cref="InvalidTextException">The JSON does not comply with RFC 7159</exception>
         /// <exception cref="InvalidTextProtocolBufferException">The JSON does not represent a Protocol Buffers message correctly</exception>
         public T Parse<T>(TextReader jsonReader) where T : IMessage, new()
         {
@@ -413,7 +415,7 @@ namespace Protobuf.Text
         /// </summary>
         /// <param name="json">The JSON to parse.</param>
         /// <param name="descriptor">Descriptor of message type to parse.</param>
-        /// <exception cref="InvalidJsonException">The JSON does not comply with RFC 7159</exception>
+        /// <exception cref="InvalidTextException">The JSON does not comply with RFC 7159</exception>
         /// <exception cref="InvalidTextProtocolBufferException">The JSON does not represent a Protocol Buffers message correctly</exception>
         public IMessage Parse(string json, MessageDescriptor descriptor)
         {
@@ -427,7 +429,7 @@ namespace Protobuf.Text
         /// </summary>
         /// <param name="textReader">Reader providing the JSON to parse.</param>
         /// <param name="descriptor">Descriptor of message type to parse.</param>
-        /// <exception cref="InvalidJsonException">The JSON does not comply with RFC 7159</exception>
+        /// <exception cref="InvalidTextException">The JSON does not comply with RFC 7159</exception>
         /// <exception cref="InvalidTextProtocolBufferException">The JSON does not represent a Protocol Buffers message correctly</exception>
         public IMessage Parse(TextReader textReader, MessageDescriptor descriptor)
         {
@@ -696,7 +698,7 @@ namespace Protobuf.Text
                 case FieldType.Bytes:
                     try
                     {
-                        return ByteString.FromBase64(text);
+                        return TextFormatter.UnescapeBytes(text);
                     }
                     catch (FormatException e)
                     {
@@ -732,8 +734,17 @@ namespace Protobuf.Text
                     }
                     // Just return it as an int, and let the CLR convert it.
                     return enumValue.Number;
+                case FieldType.Bool:
+                    if ("true".Equals(text, StringComparison.OrdinalIgnoreCase))
+                        return true;
+                    
+                    if ("false".Equals(text, StringComparison.OrdinalIgnoreCase))
+                        return false;
+
+                    throw new InvalidTextProtocolBufferException($"Invalid bool value: {text}");
+
                 default:
-                    throw new InvalidTextProtocolBufferException($"Unsupported conversion from JSON string for field type {field.FieldType}");
+                    throw new InvalidTextProtocolBufferException($"Unsupported conversion from Text string for field type {field.FieldType}");
             }
         }
 
