@@ -3,6 +3,17 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Protobuf.Text</RootNamespace>
     <AssemblyName>Protobuf.Text</AssemblyName>
+    <Version>0.1</Version>
+    <Company>SciSharp</Company>
+    <Product>protobug.Text</Product>
+    <Authors>Kerry Jiang and other contributors</Authors>
+    <Description>Text format support for google's protobuf C# library</Description>
+    <Copyright>Apache 2.0</Copyright>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/SciSharp/protobuf.Text</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/SciSharp/protobuf.Text</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>C#,protobuf,text,text format</PackageTags>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Google.Protobuf" Version="$(ProtobufVersion)" />
