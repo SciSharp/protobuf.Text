@@ -211,18 +211,6 @@ namespace Protobuf.Text
                 containerStack.Push(ContainerType.Document);
             }
 
-            internal override TextToken Next()
-            {
-                var nextToken = base.Next();
-
-                if (nextToken.Type == TokenType.Name && state != State.ObjectBeforeColon)
-                {
-                    state = State.ObjectAfterColon;
-                }
-
-                return nextToken;
-            }
-
             char? ReadNoisyContent()
             {
                 while (true) //comment line
@@ -470,7 +458,13 @@ namespace Protobuf.Text
                     }
                     else
                     {
-                        if (c == '\0' || c == ':' || c == ' ' || c == '\r' || c == '\n')
+                        if (c == ':')
+                        {
+                            reader.PushBack(c);
+                            return value.ToString();
+                        }
+
+                        if (c == '\0' || c == ' ' || c == '\r' || c == '\n')
                         {
                             return value.ToString();
                         }

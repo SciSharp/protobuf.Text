@@ -224,7 +224,7 @@ namespace Test
         [InlineData("mapInt32ForeignMessage: { 10: null }")]
         public void MapField_NullValueProhibited(string json)
         {
-            Assert.Throws<InvalidTextProtocolBufferException>(() => TestMap.Parser.ParseText(json));
+            Assert.Throws<InvalidTextException>(() => TestMap.Parser.ParseText(json));
         }
 
         [Fact]
