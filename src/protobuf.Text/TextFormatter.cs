@@ -239,7 +239,7 @@ namespace Protobuf.Text
                     writer.Write(PropertySeparator);
                 }
 
-                writer.Write(accessor.Descriptor.JsonName);
+                writer.Write(field.Name);
 
                 var wrapped = false;
 
