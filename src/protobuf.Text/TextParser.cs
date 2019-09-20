@@ -735,7 +735,7 @@ namespace Protobuf.Text
                 case FieldType.Bytes:
                     try
                     {
-                        return TextFormatter.UnescapeBytes(text);
+                        return TextFormatter.DecodeBytes(text);
                     }
                     catch (FormatException e)
                     {

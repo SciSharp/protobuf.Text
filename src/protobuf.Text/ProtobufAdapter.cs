@@ -38,6 +38,11 @@ using Google.Protobuf.Reflection;
 using static Google.Protobuf.Reflection.MessageDescriptor;
 using System.Collections.ObjectModel;
 using System.Reflection;
+using System.Text;
+using System.Globalization;
+using System.Linq;
+using System.IO;
+using System.Collections;
 
 namespace Protobuf.Text
 {
@@ -145,6 +150,138 @@ namespace Protobuf.Text
             var message = parser.CreateTemplate();
             TextParser.Default.Merge(message, text);
             return message;
+        }
+
+        private static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        internal static void AppendNanoseconds(StringBuilder builder, int nanos)
+        {
+            if (nanos != 0)
+            {
+                builder.Append('.');
+                // Output to 3, 6 or 9 digits.
+                if (nanos % 1000000 == 0)
+                {
+                    builder.Append((nanos / 1000000).ToString("d3", CultureInfo.InvariantCulture));
+                }
+                else if (nanos % 1000 == 0)
+                {
+                    builder.Append((nanos / 1000).ToString("d6", CultureInfo.InvariantCulture));
+                }
+                else
+                {
+                    builder.Append(nanos.ToString("d9", CultureInfo.InvariantCulture));
+                }
+            }
+        }
+        internal static string TimestampToText(long seconds, int nanoseconds, bool diagnosticOnly)
+        {
+            if (IsNormalized(seconds, nanoseconds))
+            {
+                // Use .NET's formatting for the value down to the second, including an opening double quote (as it's a string value)
+                DateTime dateTime = UnixEpoch.AddSeconds(seconds);
+                var builder = new StringBuilder();
+                builder.Append('"');
+                builder.Append(dateTime.ToString("yyyy'-'MM'-'dd'T'HH:mm:ss", CultureInfo.InvariantCulture));
+                AppendNanoseconds(builder, nanoseconds);
+                builder.Append("Z\"");
+                return builder.ToString();
+            }
+
+            if (diagnosticOnly)
+            {
+                return string.Format(CultureInfo.InvariantCulture,
+                    "{{ \"@warning\": \"Invalid Timestamp\", \"seconds\": \"{0}\", \"nanos\": {1} }}",
+                    seconds,
+                    nanoseconds);
+            }
+            else
+            {
+                throw new InvalidOperationException("Non-normalized timestamp value");
+            }
+        }
+
+        internal static string DurationToText(long seconds, int nanoseconds, bool diagnosticOnly)
+        {
+            if (IsNormalized(seconds, nanoseconds))
+            {
+                var builder = new StringBuilder();
+                builder.Append('"');
+                // The seconds part will normally provide the minus sign if we need it, but not if it's 0...
+                if (seconds == 0 && nanoseconds < 0)
+                {
+                    builder.Append('-');
+                }
+
+                builder.Append(seconds.ToString("d", CultureInfo.InvariantCulture));
+                AppendNanoseconds(builder, Math.Abs(nanoseconds));
+                builder.Append("s\"");
+                return builder.ToString();
+            }
+            if (diagnosticOnly)
+            {
+                // Note: the double braces here are escaping for braces in format strings.
+                return string.Format(CultureInfo.InvariantCulture,
+                    "{{ \"@warning\": \"Invalid Duration\", \"seconds\": \"{0}\", \"nanos\": {1} }}",
+                    seconds,
+                    nanoseconds);
+            }
+            else
+            {
+                throw new InvalidOperationException("Non-normalized duration value");
+            }
+        }
+
+        private static bool IsPathValid(string input)
+        {
+            for (int i = 0; i < input.Length; i++)
+            {
+                char c = input[i];
+                if (c >= 'A' && c <= 'Z')
+                {
+                    return false;
+                }
+                if (c == '_' && i < input.Length - 1)
+                {
+                    char next = input[i + 1];
+                    if (next < 'a' || next > 'z')
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+        
+        internal static string FieldMaskToText(IList<string> paths, bool diagnosticOnly)
+        {
+            var firstInvalid = paths.FirstOrDefault(p => !IsPathValid(p));
+            if (firstInvalid == null)
+            {
+                var writer = new StringWriter();
+#if NET35
+                var query = paths.Select(TextFormatter.ToTextName);
+                TextFormatter.WriteString(writer, string.Join(",", query.ToArray()));
+#else
+                TextFormatter.WriteString(writer, string.Join(",", paths.Select(TextFormatter.ToTextName)));
+#endif
+                return writer.ToString();
+            }
+            else
+            {
+                if (diagnosticOnly)
+                {
+                    var writer = new StringWriter();
+                    writer.Write("{ \"@warning\": \"Invalid FieldMask\", \"paths\": ");
+                    TextFormatter.Default.WriteList(writer, (IList)paths);
+                    writer.Write(" }");
+                    return writer.ToString();
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Invalid field mask to be converted to JSON: {firstInvalid}");
+                }
+            }
         }
     }
 }

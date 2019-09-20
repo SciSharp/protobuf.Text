@@ -320,7 +320,7 @@ namespace Protobuf.Text
 
                             var name = ReadName();
                     
-                            state = State.ObjectAfterColon;
+                            state = State.ObjectBeforeColon;
                             return TextToken.Name(name);
                         }
                     }
@@ -333,7 +333,7 @@ namespace Protobuf.Text
                             reader.PushBack(next.Value);
 
                             var name = ReadName();                
-                            state = State.ObjectAfterColon;
+                            state = State.ObjectBeforeColon;
                             return TextToken.Name(name);
                         }
                     }
@@ -443,13 +443,37 @@ namespace Protobuf.Text
             {
                 var value = new StringBuilder();
 
+                var i = 0;
+                char? endChar = null;
+
                 while (true)
                 {
                     var c = reader.ReadChar();
 
-                    if (c == '\0' || c == ':' || c == ' ' || c == '\r' || c == '\n')
+                    if (i == 0)
                     {
-                        return value.ToString();
+                        if (c == '\'' || c == '"')
+                        {
+                            endChar = c;
+                            continue;
+                        }
+
+                        i++;
+                    }
+
+                    if (endChar.HasValue)
+                    {
+                        if (c == '\0' || c == '\r' || c == '\n' || c == endChar.Value)
+                        {
+                            return value.ToString();
+                        }
+                    }
+                    else
+                    {
+                        if (c == '\0' || c == ':' || c == ' ' || c == '\r' || c == '\n')
+                        {
+                            return value.ToString();
+                        }
                     }
 
                     if (c == '\\')

@@ -61,6 +61,7 @@ namespace Test
             AssertRoundtrip(new TestMap { MapInt32Int32 = { { 0, 1 }, { 2, 3 } } });
             AssertRoundtrip(new TestMap { MapBoolBool = { { false, true }, { true, false } } });
         }
+        
 
         [Theory]
         [InlineData(" 1 ")]
@@ -127,17 +128,20 @@ namespace Test
             AssertRoundtrip(message);
         }
 
+        /*
         [Fact]
         public void SingularWrappers_ExplicitNulls()
         {
             // When we parse the "valueField": null part, we remember it... basically, it's one case
             // where explicit default values don't fully roundtrip.
             var message = new TestWellKnownTypes { ValueField = Value.ForNull() };
-            var json = new JsonFormatter(new JsonFormatter.Settings(true)).Format(message);
+            var json = TextFormatter.Format(message);
             var parsed = TextParser.Default.Parse<TestWellKnownTypes>(json);
             Assert.Equal(message, parsed);
         }
-
+        */
+        
+        /*
         [Theory]
         [InlineData(typeof(BoolValue), "true", true)]
         [InlineData(typeof(Int32Value), "32", 32)]
@@ -161,6 +165,7 @@ namespace Test
             expected.Descriptor.Fields[Protobuf.Text.WrappersReflection.WrapperValueFieldNumber].Accessor.SetValue(expected, expectedValue);
             Assert.Equal(expected, parsed);
         }
+        */
 
         [Fact]
         public void ExplicitNullValue()
@@ -174,8 +179,9 @@ namespace Test
         public void BytesWrapper_Standalone()
         {
             ByteString data = ByteString.CopyFrom(1, 2, 3);
+            
             // Can't do this with attributes...
-            var parsed = TextParser.Default.Parse<BytesValue>(WrapInQuotes(data.ToBase64()));
+            var parsed = TextParser.Default.Parse<BytesValue>(TextFormatter.EncodeByteString(data));
             var expected = new BytesValue { Value = data };
             Assert.Equal(expected, parsed);
         }
@@ -201,7 +207,7 @@ namespace Test
         [Fact]
         public void RepeatedField_NullElementProhibited()
         {
-            string json = "{ \"repeated_foreign_message\": [null] }";
+            string json = "repeated_foreign_message: [null]";
             Assert.Throws<InvalidTextProtocolBufferException>(() => TestAllTypes.Parser.ParseText(json));
         }
 
@@ -240,7 +246,7 @@ namespace Test
         private static void AssertRoundtrip<T>(T message) where T : IMessage<T>, new()
         {
             var clone = message.Clone();
-            var json = TextFormatter.Format(message);
+            var json = TextFormatter.Default.Format(message);
             var parsed = TextParser.Default.Parse<T>(json);
             Assert.Equal(clone, parsed);
         }
