@@ -198,7 +198,7 @@ namespace Protobuf.Text
         private sealed class TextTextTokenizer : TextTokenizer
         {
             // The set of states in which a value is valid next token.
-            private static readonly State ValueStates = State.ArrayStart | State.ArrayAfterComma | State.ObjectAfterColon | State.StartOfDocument;
+            private static readonly State ValueStates = State.ArrayStart | State.ArrayAfterComma | State.ObjectBeforeColon | State.ObjectAfterColon | State.StartOfDocument;
 
             private readonly Stack<ContainerType> containerStack = new Stack<ContainerType>();
             private readonly PushBackReader reader;
@@ -293,7 +293,7 @@ namespace Protobuf.Text
 
                             PushBack(TextToken.Name(name));
 
-                            state = State.ObjectStart;
+                            state = State.ObjectBeforeColon;
                             return TextToken.StartObject;
                         }
                     }
