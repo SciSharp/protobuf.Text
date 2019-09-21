@@ -674,7 +674,7 @@ namespace Protobuf.Text
                     var strNumber = builder.ToString();
                     
                     return double.Parse(strNumber,
-                        NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint,
+                        NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent,
                         CultureInfo.InvariantCulture);
                 }
                 catch (OverflowException)
