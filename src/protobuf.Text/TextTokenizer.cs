@@ -299,8 +299,7 @@ namespace Protobuf.Text
                     }
                     else if (state == State.ObjectAfterProperty)
                     {
-                        if (char.IsWhiteSpace(next.Value))
-                            continue;
+                        next = ReadNoisyContent();
 
                         if (next.Value != '}')
                         {

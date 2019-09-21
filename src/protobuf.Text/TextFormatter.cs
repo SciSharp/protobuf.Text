@@ -221,13 +221,15 @@ namespace Protobuf.Text
             foreach (var field in fields.InFieldNumberOrder())
             {
                 var accessor = field.Accessor;
+
                 if (field.ContainingOneof != null && field.ContainingOneof.Accessor.GetCaseFieldDescriptor(message) != field)
                 {
                     continue;
                 }
                 // Omit default values unless we're asked to format them, or they're oneofs (where the default
                 // value is still formatted regardless, because that's how we preserve the oneof case).
-                object value = accessor.GetValue(message);
+                object value = accessor.GetValue(message);    
+
                 if (field.ContainingOneof == null && !settings.FormatDefaultValues && IsDefaultValue(accessor, value))
                 {
                     continue;
@@ -239,28 +241,49 @@ namespace Protobuf.Text
                     writer.Write(PropertySeparator);
                 }
 
-                writer.Write(field.Name);
-
-                var wrapped = false;
-
-                if (field.IsMap || field.FieldType == FieldType.Message)
+                if (field.IsRepeated)
                 {
-                    writer.Write(" {\n");
-                    wrapped = true;
-                }
-                else
-                {
-                    writer.Write(": ");
+                    WriteRepeatedField(writer, field, value);
+                    continue;
                 }
 
-                WriteValue(writer, value);
-
-                if (wrapped)
-                    writer.Write("\n}");
+                WriteSingleField(writer, field, value);
 
                 first = false;
             }
             return !first;
+        }
+  
+        private void WriteSingleField(TextWriter writer, FieldDescriptor field, object value)
+        {
+            writer.Write(field.Name);
+
+            var wrapped = false;
+
+            if (field.IsMap || field.FieldType == FieldType.Message)
+            {
+                writer.Write(" {\n");
+                wrapped = true;
+            }
+            else
+            {
+                writer.Write(": ");
+            }
+
+            WriteValue(writer, value);
+
+            if (wrapped)
+                writer.Write("\n}");
+        }
+
+        private void WriteRepeatedField(TextWriter writer, FieldDescriptor field, object value)
+        {
+            // Repeated field.  Print each element.
+            foreach (object element in (IEnumerable) value)
+            {
+                WriteSingleField(writer, field, element);
+                writer.Write(PropertySeparator);
+            }
         }
 
         // Converted from java/core/src/main/java/com/google/protobuf/Descriptors.java

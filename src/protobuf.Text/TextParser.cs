@@ -198,6 +198,7 @@ namespace Protobuf.Text
                     throw new InvalidOperationException("Unexpected token type " + token.Type);
                 }
                 string name = token.StringValue;
+
                 FieldDescriptor field;
 
                 if (jsonFieldMap.TryGetValue(name, out field))
@@ -213,6 +214,7 @@ namespace Protobuf.Text
                             throw new InvalidTextProtocolBufferException($"Multiple values specified for oneof {field.ContainingOneof.Name}");
                         }
                     }
+
                     MergeField(message, field, tokenizer);
                 }
                 else
@@ -294,6 +296,7 @@ namespace Protobuf.Text
                         if (!token.StringValue.Equals(field.Name, StringComparison.OrdinalIgnoreCase))
                         {
                             // end of the repeat
+                            tokenizer.PushBack(token);
                             return;
                         }
                         // read the start of the object
