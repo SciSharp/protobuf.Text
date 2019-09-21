@@ -217,6 +217,9 @@ namespace Protobuf.Text
                 {
                     var next = reader.Read();
 
+                    if (next == null)
+                        return null;
+
                     if (next.Value == '#')
                     {
                         reader.ReadLine();
@@ -271,14 +274,20 @@ namespace Protobuf.Text
                         }
                         else
                         {
-                            if (next.Value != '\"')
-                            {
-                                reader.PushBack(next.Value);
-                            }
-                            
+                            reader.PushBack(next.Value);                            
                             containerStack.Push(ContainerType.Object);
 
                             var name = ReadName();
+
+                            if (reader.LastChar != null)
+                            {
+                                next = ReadNoisyContent();
+
+                                if (next != null)
+                                {
+                                    reader.PushBack(next.Value);
+                                }
+                            }                            
                             
                             if (reader.LastChar == null)
                             {
@@ -299,7 +308,14 @@ namespace Protobuf.Text
                     }
                     else if (state == State.ObjectAfterProperty)
                     {
+                        reader.PushBack(next.Value);
                         next = ReadNoisyContent();
+
+                        if (next == null)
+                        {
+                            state = State.ExpectedEndOfDocument;
+                            return TextToken.EndDocument;
+                        }
 
                         if (next.Value != '}')
                         {
@@ -313,6 +329,7 @@ namespace Protobuf.Text
                     }
                     else if (state == State.ObjectStart)
                     {
+                        reader.PushBack(next.Value);
                         next = ReadNoisyContent();
 
                         if (next.Value != '}')

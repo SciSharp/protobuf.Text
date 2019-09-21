@@ -260,7 +260,7 @@ namespace Protobuf.Text
 
             var wrapped = false;
 
-            if (field.IsMap || value is IMessage)
+            if (field.IsMap || (value is IMessage && !(value is Value)))
             {
                 writer.Write(" {\n");
                 wrapped = true;
