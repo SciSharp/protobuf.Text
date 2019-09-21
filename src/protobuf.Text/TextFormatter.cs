@@ -241,7 +241,7 @@ namespace Protobuf.Text
                     writer.Write(PropertySeparator);
                 }
 
-                if (field.IsRepeated)
+                if (field.IsRepeated && !field.IsMap)
                 {
                     WriteRepeatedField(writer, field, value);
                     continue;
