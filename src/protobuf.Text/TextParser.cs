@@ -802,20 +802,20 @@ namespace Protobuf.Text
             // Can't prohibit this with NumberStyles.
             if (text.StartsWith("+"))
             {
-                throw new InvalidTextProtocolBufferException($"Invalid numeric value: {text}");
+                throw new InvalidTextException($"Invalid numeric value: {text}");
             }
             if (text.StartsWith("0") && text.Length > 1)
             {
                 if (text[1] >= '0' && text[1] <= '9')
                 {
-                    throw new InvalidTextProtocolBufferException($"Invalid numeric value: {text}");
+                    throw new InvalidTextException($"Invalid numeric value: {text}");
                 }
             }
             else if (text.StartsWith("-0") && text.Length > 2)
             {
                 if (text[2] >= '0' && text[2] <= '9')
                 {
-                    throw new InvalidTextProtocolBufferException($"Invalid numeric value: {text}");
+                    throw new InvalidTextException($"Invalid numeric value: {text}");
                 }
             }
             try
@@ -824,11 +824,11 @@ namespace Protobuf.Text
             }
             catch (FormatException)
             {
-                throw new InvalidTextProtocolBufferException($"Invalid numeric value for type: {text}");
+                throw new InvalidTextException($"Invalid numeric value for type: {text}");
             }
             catch (OverflowException)
             {
-                throw new InvalidTextProtocolBufferException($"Value out of range: {text}");
+                throw new InvalidTextException($"Value out of range: {text}");
             }
         }
 
