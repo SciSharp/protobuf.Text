@@ -198,7 +198,7 @@ namespace Protobuf.Text
         private sealed class TextTextTokenizer : TextTokenizer
         {
             // The set of states in which a value is valid next token.
-            private static readonly State ValueStates = State.ArrayStart | State.ArrayAfterComma | State.ObjectBeforeColon | State.ObjectAfterColon | State.StartOfDocument;
+            private static readonly State ValueStates = State.ArrayStart | State.ArrayAfterComma  | State.ObjectStart| State.ObjectBeforeColon | State.ObjectAfterColon | State.StartOfDocument;
 
             private readonly Stack<ContainerType> containerStack = new Stack<ContainerType>();
             private readonly PushBackReader reader;
@@ -277,7 +277,7 @@ namespace Protobuf.Text
                             break;
                         case '\'':
                         case '"':
-                            return GetValueString(next.Value);
+                            return GetToken(next.Value);
                         case '{':
                             ValidateState(ValueStates, "Invalid state to read an open brace: ");
                             state = State.ObjectStart;
@@ -313,17 +313,68 @@ namespace Protobuf.Text
                         case '7':
                         case '8':
                         case '9':
-                            double number = ReadNumber(next.Value);
-                            ValidateAndModifyStateForValue("Invalid state to read a number token: ");
-                            return TextToken.Value(number);
+                            return GetNumberToken(next.Value);
                         default:
                             reader.PushBack(next.Value);
-                            return GetValueString(ReadName());
+                            return GetToken(ReadName());
                     }
                 }
             }
 
-            private TextToken GetValueString(string stringValue)
+            interface ITokenMaker
+            {
+                TextToken CreateNameToken(string text);
+
+                TextToken CreateValueToken(string text);
+            }
+
+            class StringTokenMaker : ITokenMaker
+            {
+                public static ITokenMaker Default { get; } = new StringTokenMaker();
+
+                public TextToken CreateNameToken(string text)
+                {
+                    return TextToken.Name(text);
+                }
+
+                public TextToken CreateValueToken(string text)
+                {
+                    return TextToken.Value(text);
+                }
+            }
+
+            class NumberTokenMaker : ITokenMaker
+            {
+                public static ITokenMaker Default { get; } = new NumberTokenMaker();
+
+                public TextToken CreateNameToken(string text)
+                {
+                    return TextToken.Name(text);
+                }
+
+                public TextToken CreateValueToken(string text)
+                {
+                    try
+                    {                        
+                        var num = double.Parse(text,
+                            NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent,
+                            CultureInfo.InvariantCulture);
+
+                        return TextToken.Value(num);
+                    }
+                    catch (OverflowException)
+                    {
+                        throw new InvalidTextException("Unable parse the number: " + text);
+                    }
+                }
+            }
+
+            private TextToken GetToken(string stringValue)
+            {
+                return GetToken(StringTokenMaker.Default, stringValue);
+            }
+
+            private TextToken GetToken(ITokenMaker tokenMaker, string stringValue)
             {
                 if ((state & State.StartOfDocument) == State.StartOfDocument)
                 {
@@ -332,7 +383,7 @@ namespace Protobuf.Text
                     if (next == null)
                     {
                         state = State.ExpectedEndOfDocument;
-                        return TextToken.Value(stringValue);
+                        return tokenMaker.CreateValueToken(stringValue);
                     }
                     else
                     {
@@ -347,17 +398,17 @@ namespace Protobuf.Text
                 if ((state & (State.ObjectStart | State.ObjectAfterComma | State.ObjectAfterProperty)) != 0)
                 {
                     state = State.ObjectBeforeColon;
-                    return TextToken.Name(stringValue);
+                    return tokenMaker.CreateNameToken(stringValue);
                 }
                 else
                 {
                     ValidateAndModifyStateForValue("Invalid state to read a double quote: ");
-                    return TextToken.Value(stringValue);
+                    return tokenMaker.CreateValueToken(stringValue);
                 }
             }
-            private TextToken GetValueString(char endChar)
+            private TextToken GetToken(char endChar)
             {
-                return GetValueString(ReadString(endChar));                
+                return GetToken(StringTokenMaker.Default, ReadString(endChar));                
             }
 
             private void ValidateState(State validStates, string errorPrefix)
@@ -375,6 +426,11 @@ namespace Protobuf.Text
 
             private string ReadName()
             {
+                if (state == State.StartOfDocument)
+                {
+                    CleanComment();
+                }
+                
                 var value = new StringBuilder();
 
                 var i = 0;
@@ -430,11 +486,24 @@ namespace Protobuf.Text
                 }
             }
 
+            private void CleanComment()
+            {
+                var next = ReadNoisyContent();
+
+                if (next != null)
+                    reader.PushBack(next.Value);
+            }
+
             /// <summary>
             /// Reads a string token. It is assumed that the opening " has already been read.
             /// </summary>
             private string ReadString(char endChar)
             {
+                if (state == State.StartOfDocument)
+                {
+                    CleanComment();
+                }
+
                 var value = new StringBuilder();
                 bool haveHighSurrogate = false;
                 
@@ -560,13 +629,11 @@ namespace Protobuf.Text
 
                     if (next == null || char.IsWhiteSpace(next.Value) || next.Value == ':')
                     {
-                        if (next == null)
-                            PushBack(TextToken.EndDocument);
-                        else if (next.Value == ':')                        
+                        if (next != null && next.Value == ':')                        
                             reader.PushBack(next.Value);
 
-                        if (sb == null)
-                            return GetValueString(text.Substring(0, matchCount));
+                        if (sb == null && matchCount < macthCountToBe)
+                            return GetToken(text.Substring(0, matchCount));
                         
                         break;
                     }
@@ -593,9 +660,12 @@ namespace Protobuf.Text
                 }
 
                 if (matchCount == macthCountToBe)
+                {
+                    ModifyStateForValue();
                     return exptectedToken;
+                } 
 
-                return GetValueString(sb.ToString());
+                return GetToken(sb.ToString());
             }
 
             /// <summary>
@@ -618,9 +688,16 @@ namespace Protobuf.Text
                 }
             }
 
-            private double ReadNumber(char initialCharacter)
+            private TextToken GetNumberToken(char initialCharacter)
+            {
+                var strNum = ReadNumber(initialCharacter);
+                return GetToken(NumberTokenMaker.Default, strNum);
+            }
+
+            private string ReadNumber(char initialCharacter)
             {
                 StringBuilder builder = new StringBuilder();
+
                 if (initialCharacter == '-')
                 {
                     builder.Append("-");
@@ -648,19 +725,7 @@ namespace Protobuf.Text
                     reader.PushBack(next.Value);
                 }
 
-                // TODO: What exception should we throw if the value can't be represented as a double?
-                try
-                {
-                    var strNumber = builder.ToString();
-                    
-                    return double.Parse(strNumber,
-                        NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent,
-                        CultureInfo.InvariantCulture);
-                }
-                catch (OverflowException)
-                {
-                    throw reader.CreateException("Numeric value out of range: " + builder);
-                }
+                return builder.ToString();
             }
 
             private char? ReadInt(StringBuilder builder)
@@ -740,10 +805,18 @@ namespace Protobuf.Text
             private void ValidateAndModifyStateForValue(string errorPrefix)
             {
                 ValidateState(ValueStates, errorPrefix);
+                ModifyStateForValue();                
+            }
+
+            private void ModifyStateForValue()
+            {
                 switch (state)
                 {
                     case State.StartOfDocument:
                         state = State.ExpectedEndOfDocument;
+                        return;
+                    case State.ObjectStart:
+                        state = State.ObjectBeforeColon;
                         return;
                     case State.ObjectAfterColon:
                         state = State.ObjectAfterProperty;
