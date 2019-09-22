@@ -3,7 +3,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Protobuf.Text</RootNamespace>
     <AssemblyName>Protobuf.Text</AssemblyName>
-    <Version>0.1</Version>
+    <Version>0.2</Version>
     <Company>SciSharp</Company>
     <Product>protobug.Text</Product>
     <Authors>Kerry Jiang and other contributors</Authors>
