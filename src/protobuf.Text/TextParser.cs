@@ -561,7 +561,7 @@ namespace Protobuf.Text
                 tokens.Add(token);
                 token = tokenizer.Next();
 
-                if (tokenizer.ObjectDepth < typeUrlObjectDepth)
+                if (tokenizer.ObjectDepth < typeUrlObjectDepth || token.Type == TokenType.EndDocument)
                 {
                     throw new InvalidTextProtocolBufferException("Any message with no @type");
                 }
