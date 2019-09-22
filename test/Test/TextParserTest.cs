@@ -72,7 +72,7 @@ namespace Test
         {
             // Test that integer parsing is strict. We assume that if this is correct for int32,
             // it's correct for other numeric key types.
-            var json = "mapInt32Int32: {" + keyText + " : \"1\" }";
+            var json = "mapInt32Int32 {" + keyText + " : \"1\" }";
             Assert.Throws<InvalidTextException>(() => TextParser.Default.Parse<TestMap>(json));
         }
 
@@ -218,9 +218,9 @@ namespace Test
         }
 
         [Theory]
-        [InlineData("mapInt32Int32: { 10: null }")]
-        [InlineData("mapStringString: { abc: null }")]
-        [InlineData("mapInt32ForeignMessage: { 10: null }")]
+        [InlineData("mapInt32Int32 { 10: null }")]
+        [InlineData("mapStringString { abc: null }")]
+        [InlineData("mapInt32ForeignMessage { 10: null }")]
         public void MapField_NullValueProhibited(string json)
         {
             Assert.Throws<InvalidTextProtocolBufferException>(() => TestMap.Parser.ParseText(json));
@@ -837,7 +837,7 @@ namespace Test
             var json = formatter.Format(original); // This is tested in JsonFormatterTest
             var parser = new TextParser(new TextParser.Settings(10, registry));
             Assert.Equal(original, parser.Parse<Any>(json));
-            string valueFirstJson = "singleInt32: 10\nsingleNestedMessage: { bb: 20 }\n@type: \"type.googleapis.com/protobuf_unittest3.TestAllTypes\"";
+            string valueFirstJson = "singleInt32: 10\nsingleNestedMessage { bb: 20 }\n@type: \"type.googleapis.com/protobuf_unittest3.TestAllTypes\"";
             Assert.Equal(original, parser.Parse<Any>(valueFirstJson));
         }
 
