@@ -255,91 +255,8 @@ namespace Protobuf.Text
 
                     if (next == null)
                     {
-                        //ValidateState(State.ExpectedEndOfDocument, "Unexpected end of document in state: ");
-                        //state = State.ReaderExhausted;
+                        state = State.ExpectedEndOfDocument;
                         return TextToken.EndDocument;
-                    }
-
-                    if (state == State.StartOfDocument)
-                    {
-                        reader.PushBack(next.Value);
-
-                        next = ReadNoisyContent();
-
-                        if (next.Value == '{')
-                        {
-                            state = State.ArrayStart;
-                            containerStack.Push(ContainerType.Array);
-                            return TextToken.StartArray;
-                        }
-                        else
-                        {
-                            reader.PushBack(next.Value);                            
-                            containerStack.Push(ContainerType.Object);
-
-                            var name = ReadName();
-
-                            if (reader.LastChar != null)
-                            {
-                                next = ReadNoisyContent();
-
-                                if (next != null)
-                                {
-                                    reader.PushBack(next.Value);
-                                }
-                            }                            
-                            
-                            if (reader.LastChar == null)
-                            {
-                                // single value
-                                state = State.ExpectedEndOfDocument;
-                                
-                                if ("null".Equals(name, StringComparison.OrdinalIgnoreCase))
-                                    return TextToken.Null;
-                                else
-                                    return TextToken.Value(name);
-                            }
-
-                            PushBack(TextToken.Name(name));
-
-                            state = State.ObjectBeforeColon;
-                            return TextToken.StartObject;
-                        }
-                    }
-                    else if (state == State.ObjectAfterProperty)
-                    {
-                        reader.PushBack(next.Value);
-                        next = ReadNoisyContent();
-
-                        if (next == null)
-                        {
-                            state = State.ExpectedEndOfDocument;
-                            return TextToken.EndDocument;
-                        }
-
-                        if (next.Value != '}')
-                        {
-                            reader.PushBack(next.Value);
-
-                            var name = ReadName();
-                    
-                            state = State.ObjectBeforeColon;
-                            return TextToken.Name(name);
-                        }
-                    }
-                    else if (state == State.ObjectStart)
-                    {
-                        reader.PushBack(next.Value);
-                        next = ReadNoisyContent();
-
-                        if (next.Value != '}')
-                        {
-                            reader.PushBack(next.Value);
-
-                            var name = ReadName();                
-                            state = State.ObjectBeforeColon;
-                            return TextToken.Name(name);
-                        }
                     }
 
                     switch (next.Value)
@@ -380,17 +297,11 @@ namespace Protobuf.Text
                             PopContainer();
                             return TextToken.EndArray;
                         case 'n': // Start of null
-                            ConsumeLiteral("null");
-                            ValidateAndModifyStateForValue("Invalid state to read a null literal: ");
-                            return TextToken.Null;
+                            return ConsumeLiteral("null", TextToken.Null);
                         case 't': // Start of true
-                            ConsumeLiteral("true");
-                            ValidateAndModifyStateForValue("Invalid state to read a true literal: ");
-                            return TextToken.True;
+                            return ConsumeLiteral("true", TextToken.True);
                         case 'f': // Start of false
-                            ConsumeLiteral("false");
-                            ValidateAndModifyStateForValue("Invalid state to read a false literal: ");
-                            return TextToken.False;
+                            return ConsumeLiteral("false", TextToken.False);
                         case '-': // Start of a number
                         case '0':
                         case '1':
@@ -414,7 +325,26 @@ namespace Protobuf.Text
 
             private TextToken GetValueString(string stringValue)
             {
-                if ((state & (State.ObjectStart | State.ObjectAfterComma)) != 0)
+                if ((state & State.StartOfDocument) == State.StartOfDocument)
+                {
+                    var next = ReadNoisyContent();
+
+                    if (next == null)
+                    {
+                        state = State.ExpectedEndOfDocument;
+                        return TextToken.Value(stringValue);
+                    }
+                    else
+                    {
+                        reader.PushBack(next.Value);
+                        PushBack(TextToken.Name(stringValue));
+                        state = State.ObjectBeforeColon;
+                        containerStack.Push(ContainerType.Object);
+                        return TextToken.StartObject;
+                    }
+                }
+
+                if ((state & (State.ObjectStart | State.ObjectAfterComma | State.ObjectAfterProperty)) != 0)
                 {
                     state = State.ObjectBeforeColon;
                     return TextToken.Name(stringValue);
@@ -616,6 +546,56 @@ namespace Protobuf.Text
                     result = (result << 4) + nybble;
                 }
                 return (char) result;
+            }
+
+            private TextToken ConsumeLiteral(string text, TextToken exptectedToken)
+            {
+                var matchCount = 1;
+                var macthCountToBe = text.Length;
+                StringBuilder sb = null;
+
+                while (true)
+                {
+                    char? next = reader.Read();
+
+                    if (next == null || char.IsWhiteSpace(next.Value) || next.Value == ':')
+                    {
+                        if (next == null)
+                            PushBack(TextToken.EndDocument);
+                        else if (next.Value == ':')                        
+                            reader.PushBack(next.Value);
+
+                        if (sb == null)
+                            return GetValueString(text.Substring(0, matchCount));
+                        
+                        break;
+                    }
+
+                    if (sb == null) // trying to match
+                    {
+                        if (matchCount < macthCountToBe)
+                        {
+                            if (next.Value == text[matchCount])
+                            {
+                                matchCount++;
+                                continue;
+                            }
+                        }                        
+
+                        sb = new StringBuilder();
+                        sb.Append(text.Substring(0, matchCount));
+                        sb.Append(next.Value);
+                    }
+                    else // read normal string
+                    {
+                        sb.Append(next.Value);
+                    }
+                }
+
+                if (matchCount == macthCountToBe)
+                    return exptectedToken;
+
+                return GetValueString(sb.ToString());
             }
 
             /// <summary>
