@@ -46,14 +46,14 @@ using System.Text.RegularExpressions;
 namespace Protobuf.Text
 {
     /// <summary>
-    /// Reflection-based converter from JSON to messages.
+    /// Reflection-based converter from text to messages.
     /// </summary>
     /// <remarks>
     /// <para>
     /// Instances of this class are thread-safe, with no mutable state.
     /// </para>
     /// <para>
-    /// This is a simple start to get JSON parsing working. As it's reflection-based,
+    /// This is a simple start to get text parsing working. As it's reflection-based,
     /// it's not as quick as baking calls into generated messages - but is a simpler implementation.
     /// (This code is generally not heavily optimized.)
     /// </para>
@@ -117,28 +117,28 @@ namespace Protobuf.Text
         }
 
         /// <summary>
-        /// Parses <paramref name="json"/> and merges the information into the given message.
+        /// Parses <paramref name="text"/> and merges the information into the given message.
         /// </summary>
-        /// <param name="message">The message to merge the JSON information into.</param>
-        /// <param name="json">The JSON to parse.</param>
-        internal void Merge(IMessage message, string json)
+        /// <param name="message">The message to merge the text information into.</param>
+        /// <param name="text">The text to parse.</param>
+        internal void Merge(IMessage message, string text)
         {
-            Merge(message, new StringReader(json));
+            Merge(message, new StringReader(text));
         }
 
         /// <summary>
-        /// Parses JSON read from <paramref name="jsonReader"/> and merges the information into the given message.
+        /// Parses text read from <paramref name="textReader"/> and merges the information into the given message.
         /// </summary>
-        /// <param name="message">The message to merge the JSON information into.</param>
-        /// <param name="jsonReader">Reader providing the JSON to parse.</param>
-        internal void Merge(IMessage message, TextReader jsonReader)
+        /// <param name="message">The message to merge the text information into.</param>
+        /// <param name="textReader">Reader providing the text to parse.</param>
+        internal void Merge(IMessage message, TextReader textReader)
         {
-            var tokenizer = TextTokenizer.FromTextReader(jsonReader);
+            var tokenizer = TextTokenizer.FromTextReader(textReader);
             Merge(message, tokenizer);
             var lastToken = tokenizer.Next();
             if (lastToken != TextToken.EndDocument)
             {
-                throw new InvalidTextProtocolBufferException("Expected end of JSON after object");
+                throw new InvalidTextProtocolBufferException("Expected end of text after object");
             }
         }
 
@@ -146,8 +146,8 @@ namespace Protobuf.Text
         /// Merges the given message using data from the given tokenizer. In most cases, the next
         /// token should be a "start object" token, but wrapper types and nullity can invalidate
         /// that assumption. This is implemented as an LL(1) recursive descent parser over the stream
-        /// of tokens provided by the tokenizer. This token stream is assumed to be valid JSON, with the
-        /// tokenizer performing that validation - but not every token stream is valid "protobuf JSON".
+        /// of tokens provided by the tokenizer. This token stream is assumed to be valid text, with the
+        /// tokenizer performing that validation - but not every token stream is valid "protobuf text".
         /// </summary>
         private void Merge(IMessage message, TextTokenizer tokenizer)
         {
@@ -1039,7 +1039,7 @@ namespace Protobuf.Text
         #endregion
 
         /// <summary>
-        /// Settings controlling JSON parsing.
+        /// Settings controlling text parsing.
         /// </summary>
         public sealed class Settings
         {
