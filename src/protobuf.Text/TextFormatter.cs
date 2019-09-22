@@ -52,7 +52,7 @@ namespace Protobuf.Text
     /// Instances of this class are thread-safe, with no mutable state.
     /// </para>
     /// <para>
-    /// This is a simple start to get JSON formatting working. As it's reflection-based,
+    /// This is a simple start to get text formatting working. As it's reflection-based,
     /// it's not as quick as baking calls into generated messages - but is a simpler implementation.
     /// (This code is generally not heavily optimized.)
     /// </para>
@@ -71,11 +71,11 @@ namespace Protobuf.Text
         /// </summary>
         public static TextFormatter Default { get; } = new TextFormatter(Settings.Default);
 
-        // A JSON formatter which *only* exists
+        // A text formatter which *only* exists
         private static readonly TextFormatter diagnosticFormatter = new TextFormatter(Settings.Default);
 
         /// <summary>
-        /// The JSON representation of the first 160 characters of Unicode.
+        /// The text representation of the first 160 characters of Unicode.
         /// Empty strings are replaced by the static constructor.
         /// </summary>
         private static readonly string[] CommonRepresentations = {
@@ -138,7 +138,7 @@ namespace Protobuf.Text
         }
 
         /// <summary>
-        /// Formats the specified message as JSON.
+        /// Formats the specified message as text.
         /// </summary>
         /// <param name="message">The message to format.</param>
         /// <returns>The formatted message.</returns>
@@ -150,7 +150,7 @@ namespace Protobuf.Text
         }
 
         /// <summary>
-        /// Formats the specified message as JSON.
+        /// Formats the specified message as text.
         /// </summary>
         /// <param name="message">The message to format.</param>
         /// <param name="writer">The TextWriter to write the formatted message to.</param>
@@ -171,22 +171,22 @@ namespace Protobuf.Text
         }
 
         /// <summary>
-        /// Converts a message to JSON for diagnostic purposes with no extra context.
+        /// Converts a message to text for diagnostic purposes with no extra context.
         /// </summary>
         /// <remarks>
         /// <para>
-        /// This differs from calling <see cref="Format(IMessage)"/> on the default JSON
+        /// This differs from calling <see cref="Format(IMessage)"/> on the default text
         /// formatter in its handling of <see cref="Any"/>. As no type registry is available
         /// in <see cref="object.ToString"/> calls, the normal way of resolving the type of
-        /// an <c>Any</c> message cannot be applied. Instead, a JSON property named <c>@value</c>
+        /// an <c>Any</c> message cannot be applied. Instead, a text property named <c>@value</c>
         /// is included with the base64 data from the <see cref="Any.Value"/> property of the message.
         /// </para>
         /// <para>The value returned by this method is only designed to be used for diagnostic
-        /// purposes. It may not be parsable by <see cref="JsonParser"/>, and may not be parsable
+        /// purposes. It may not be parsable by <see cref="TextParser"/>, and may not be parsable
         /// by other Protocol Buffer implementations.</para>
         /// </remarks>
         /// <param name="message">The message to format for diagnostic purposes.</param>
-        /// <returns>The diagnostic-only JSON representation of the message</returns>
+        /// <returns>The diagnostic-only text representation of the message</returns>
         public static string ToDiagnosticString(IMessage message)
         {
             ProtoPreconditions.CheckNotNull(message, nameof(message));
@@ -381,7 +381,7 @@ namespace Protobuf.Text
         }
 
         /// <summary>
-        /// Writes a single value to the given writer as JSON. Only types understood by
+        /// Writes a single value to the given writer as text. Only types understood by
         /// Protocol Buffers can be written in this way. This method is only exposed for
         /// advanced use cases; most users should be using <see cref="Format(IMessage)"/>
         /// or <see cref="Format(IMessage, TextWriter)"/>.
@@ -1023,12 +1023,12 @@ namespace Protobuf.Text
         }
 
         /// <summary>
-        /// Settings controlling JSON formatting.
+        /// Settings controlling text formatting.
         /// </summary>
         public sealed class Settings
         {
             /// <summary>
-            /// Default settings, as used by <see cref="JsonFormatter.Default"/>
+            /// Default settings, as used by <see cref="TextFormatter.Default"/>
             /// </summary>
             public static Settings Default { get; }
 

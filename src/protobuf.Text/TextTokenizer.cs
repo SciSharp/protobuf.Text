@@ -38,7 +38,7 @@ using System.Text;
 namespace Protobuf.Text
 {
     /// <summary>
-    /// Simple but strict JSON tokenizer, rigidly following RFC 7159.
+    /// Simple but strict text tokenizer, rigidly following RFC 7159.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -99,7 +99,7 @@ namespace Protobuf.Text
         }
 
         /// <summary>
-        /// Returns the next JSON token in the stream. An EndDocument token is returned to indicate the end of the stream,
+        /// Returns the next text token in the stream. An EndDocument token is returned to indicate the end of the stream,
         /// after which point <c>Next()</c> should not be called again.
         /// </summary>
         /// <remarks>This implementation provides single-token buffering, and calls <see cref="NextImpl"/> if there is no buffered token.</remarks>
@@ -131,7 +131,7 @@ namespace Protobuf.Text
         }
 
         /// <summary>
-        /// Returns the next JSON token in the stream, when requested by the base class. (The <see cref="Next"/> method delegates
+        /// Returns the next text token in the stream, when requested by the base class. (The <see cref="Next"/> method delegates
         /// to this if it doesn't have a buffered token.)
         /// </summary>
         /// <exception cref="InvalidOperationException">This method is called after an EndDocument token has been returned</exception>
@@ -193,7 +193,7 @@ namespace Protobuf.Text
         }
 
         /// <summary>
-        /// Tokenizer which does all the *real* work of parsing JSON.
+        /// Tokenizer which does all the *real* work of parsing text.
         /// </summary>
         private sealed class TextTextTokenizer : TextTokenizer
         {

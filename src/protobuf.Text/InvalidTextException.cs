@@ -39,8 +39,8 @@ namespace Protobuf.Text
     /// a non-string property key, or including a redundant comma. Parsing a protocol buffer
     /// message represented in text using <see cref="TextParser"/> can throw both this
     /// exception and <see cref="InvalidTextProtocolBufferException"/> depending on the situation. This
-    /// exception is only thrown for "pure JSON" errors, whereas <c>InvalidTextProtocolBufferException</c>
-    /// is thrown when the JSON may be valid in and of itself, but cannot be parsed as a protocol buffer
+    /// exception is only thrown for "pure text" errors, whereas <c>InvalidTextProtocolBufferException</c>
+    /// is thrown when the text may be valid in and of itself, but cannot be parsed as a protocol buffer
     /// message.
     /// </summary>
     public sealed class InvalidTextException : IOException

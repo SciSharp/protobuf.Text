@@ -418,59 +418,59 @@ namespace Protobuf.Text
                 case TokenType.Null:
                     throw new NotImplementedException("Haven't worked out what to do for null yet");
                 default:
-                    throw new InvalidTextProtocolBufferException("Unsupported JSON token type " + token.Type + " for field type " + fieldType);
+                    throw new InvalidTextProtocolBufferException("Unsupported text token type " + token.Type + " for field type " + fieldType);
             }
         }
 
         /// <summary>
-        /// Parses <paramref name="json"/> into a new message.
+        /// Parses <paramref name="text"/> into a new message.
         /// </summary>
         /// <typeparam name="T">The type of message to create.</typeparam>
-        /// <param name="json">The JSON to parse.</param>
-        /// <exception cref="InvalidTextException">The JSON does not comply with RFC 7159</exception>
-        /// <exception cref="InvalidTextProtocolBufferException">The JSON does not represent a Protocol Buffers message correctly</exception>
-        public T Parse<T>(string json) where T : IMessage, new()
+        /// <param name="text">The text to parse.</param>
+        /// <exception cref="InvalidTextException">The text does not comply with RFC 7159</exception>
+        /// <exception cref="InvalidTextProtocolBufferException">The text does not represent a Protocol Buffers message correctly</exception>
+        public T Parse<T>(string text) where T : IMessage, new()
         {
-            ProtoPreconditions.CheckNotNull(json, nameof(json));
-            return Parse<T>(new StringReader(json));
+            ProtoPreconditions.CheckNotNull(text, nameof(text));
+            return Parse<T>(new StringReader(text));
         }
 
         /// <summary>
-        /// Parses JSON read from <paramref name="jsonReader"/> into a new message.
+        /// Parses text read from <paramref name="textReader"/> into a new message.
         /// </summary>
         /// <typeparam name="T">The type of message to create.</typeparam>
-        /// <param name="jsonReader">Reader providing the JSON to parse.</param>
-        /// <exception cref="InvalidTextException">The JSON does not comply with RFC 7159</exception>
-        /// <exception cref="InvalidTextProtocolBufferException">The JSON does not represent a Protocol Buffers message correctly</exception>
-        public T Parse<T>(TextReader jsonReader) where T : IMessage, new()
+        /// <param name="textReader">Reader providing the text to parse.</param>
+        /// <exception cref="InvalidTextException">The text does not comply with RFC 7159</exception>
+        /// <exception cref="InvalidTextProtocolBufferException">The text does not represent a Protocol Buffers message correctly</exception>
+        public T Parse<T>(TextReader textReader) where T : IMessage, new()
         {
-            ProtoPreconditions.CheckNotNull(jsonReader, nameof(jsonReader));
+            ProtoPreconditions.CheckNotNull(textReader, nameof(textReader));
             T message = new T();
-            Merge(message, jsonReader);
+            Merge(message, textReader);
             return message;
         }
 
         /// <summary>
-        /// Parses <paramref name="json"/> into a new message.
+        /// Parses <paramref name="text"/> into a new message.
         /// </summary>
-        /// <param name="json">The JSON to parse.</param>
+        /// <param name="text">The text to parse.</param>
         /// <param name="descriptor">Descriptor of message type to parse.</param>
-        /// <exception cref="InvalidTextException">The JSON does not comply with RFC 7159</exception>
-        /// <exception cref="InvalidTextProtocolBufferException">The JSON does not represent a Protocol Buffers message correctly</exception>
-        public IMessage Parse(string json, MessageDescriptor descriptor)
+        /// <exception cref="InvalidTextException">The text does not comply with RFC 7159</exception>
+        /// <exception cref="InvalidTextProtocolBufferException">The text does not represent a Protocol Buffers message correctly</exception>
+        public IMessage Parse(string text, MessageDescriptor descriptor)
         {
-            ProtoPreconditions.CheckNotNull(json, nameof(json));
+            ProtoPreconditions.CheckNotNull(text, nameof(text));
             ProtoPreconditions.CheckNotNull(descriptor, nameof(descriptor));
-            return Parse(new StringReader(json), descriptor);
+            return Parse(new StringReader(text), descriptor);
         }
 
         /// <summary>
-        /// Parses JSON read from <paramref name="textReader"/> into a new message.
+        /// Parses text read from <paramref name="textReader"/> into a new message.
         /// </summary>
-        /// <param name="textReader">Reader providing the JSON to parse.</param>
+        /// <param name="textReader">Reader providing the text to parse.</param>
         /// <param name="descriptor">Descriptor of message type to parse.</param>
-        /// <exception cref="InvalidTextException">The JSON does not comply with RFC 7159</exception>
-        /// <exception cref="InvalidTextProtocolBufferException">The JSON does not represent a Protocol Buffers message correctly</exception>
+        /// <exception cref="InvalidTextException">The text does not comply with RFC 7159</exception>
+        /// <exception cref="InvalidTextProtocolBufferException">The text does not represent a Protocol Buffers message correctly</exception>
         public IMessage Parse(TextReader textReader, MessageDescriptor descriptor)
         {
             ProtoPreconditions.CheckNotNull(textReader, nameof(textReader));
@@ -598,8 +598,8 @@ namespace Protobuf.Text
             message.Descriptor.Fields[Any.ValueFieldNumber].Accessor.SetValue(message, data);
         }
 
-        // Well-known types end up in a property called "value" in the JSON. As there's no longer a @type property
-        // in the given JSON token stream, we should *only* have tokens of start-object, name("value"), the value
+        // Well-known types end up in a property called "value" in the text. As there's no longer a @type property
+        // in the given text token stream, we should *only* have tokens of start-object, name("value"), the value
         // itself, and then end-object.
         private void MergeWellKnownTypeAnyBody(IMessage body, TextTokenizer tokenizer)
         {
@@ -707,7 +707,7 @@ namespace Protobuf.Text
                             // Note that we deliberately don't check that it's a known value.
                             return (int) value;
                         default:
-                            throw new InvalidTextProtocolBufferException($"Unsupported conversion from JSON number for field type {field.FieldType}");
+                            throw new InvalidTextProtocolBufferException($"Unsupported conversion from text number for field type {field.FieldType}");
                     }
                 }
                 catch (OverflowException)
