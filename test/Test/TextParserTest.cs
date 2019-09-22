@@ -73,7 +73,7 @@ namespace Test
             // Test that integer parsing is strict. We assume that if this is correct for int32,
             // it's correct for other numeric key types.
             var json = "mapInt32Int32: {" + keyText + " : \"1\" }";
-            Assert.Throws<InvalidTextProtocolBufferException>(() => TextParser.Default.Parse<TestMap>(json));
+            Assert.Throws<InvalidTextException>(() => TextParser.Default.Parse<TestMap>(json));
         }
 
         [Fact]
@@ -427,7 +427,6 @@ namespace Test
             Assert.Throws<InvalidTextProtocolBufferException>(() => TestAllTypes.Parser.ParseText(json));
         }
 
-        //TODO: test case to fix
         [Theory]
         [InlineData("0", 0)]
         [InlineData("-0", 0)] // Not entirely clear whether we intend to allow this...
@@ -446,12 +445,11 @@ namespace Test
             Assert.Equal(expectedParsedValue, parsed.SingleInt32);
         }
 
-        //TODO: test case to fix
         [Theory]
         [InlineData("+0", typeof(InvalidTextProtocolBufferException))]
         [InlineData("00", typeof(InvalidTextException))]
         [InlineData("-00", typeof(InvalidTextException))]
-        [InlineData("--1", typeof(InvalidTextProtocolBufferException))]
+        [InlineData("--1", typeof(InvalidTextException))]
         [InlineData("+1", typeof(InvalidTextProtocolBufferException))]
         [InlineData("1.5", typeof(InvalidTextProtocolBufferException))]
         // Value is out of range
@@ -573,10 +571,9 @@ namespace Test
         public void NumberToDouble_Invalid(string jsonValue)
         {
             string json = "singleDouble: " + jsonValue;
-            Assert.Throws<InvalidJsonException>(() => TestAllTypes.Parser.ParseText(json));
+            Assert.Throws<InvalidTextException>(() => TestAllTypes.Parser.ParseText(json));
         }
 
-        //TODO: test case to fix
         [Theory]
         [InlineData("0", 0f)]
         [InlineData("1", 1f)]
@@ -593,15 +590,14 @@ namespace Test
             Assert.Equal(expectedParsedValue, parsed.SingleFloat);
         }
 
-        //TODO: test case to fix
         [Theory]
         [InlineData("3.402824e38", typeof(InvalidTextProtocolBufferException))]
         [InlineData("-3.402824e38", typeof(InvalidTextProtocolBufferException))]
-        [InlineData("1,0", typeof(InvalidJsonException))]
-        [InlineData("1.0.0", typeof(InvalidJsonException))]
-        [InlineData("+1", typeof(InvalidJsonException))]
-        [InlineData("00", typeof(InvalidJsonException))]
-        [InlineData("--1", typeof(InvalidJsonException))]
+        [InlineData("1,0", typeof(InvalidTextProtocolBufferException))]
+        [InlineData("1.0.0", typeof(InvalidTextProtocolBufferException))]
+        [InlineData("+1", typeof(InvalidTextException))]
+        [InlineData("00", typeof(InvalidTextException))]
+        [InlineData("--1", typeof(InvalidTextException))]
         public void NumberToFloat_Invalid(string jsonValue, System.Type expectedExceptionType)
         {
             string json = "singleFloat: " + jsonValue;
