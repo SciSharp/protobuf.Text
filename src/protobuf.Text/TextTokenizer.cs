@@ -54,6 +54,9 @@ namespace Protobuf.Text
     {
         private TextToken bufferedToken;
 
+        private TextToken bufferedToken2;
+
+
         /// <summary>
         ///  Creates a tokenizer that reads from the given text reader.
         /// </summary>
@@ -85,9 +88,14 @@ namespace Protobuf.Text
         {
             if (bufferedToken != null)
             {
-                throw new InvalidOperationException("Can't push back twice");
+                if (bufferedToken2 != null)
+                    throw new InvalidOperationException("Can't push back three times");
+
+                bufferedToken2 = bufferedToken;                
             }
+
             bufferedToken = token;
+
             if (token.Type == TokenType.StartObject)
             {
                 ObjectDepth--;
@@ -114,6 +122,12 @@ namespace Protobuf.Text
             {
                 tokenToReturn = bufferedToken;
                 bufferedToken = null;
+
+                if (bufferedToken2 != null)
+                {
+                    bufferedToken = bufferedToken2;
+                    bufferedToken2 = null;
+                }
             }
             else
             {
@@ -127,6 +141,7 @@ namespace Protobuf.Text
             {
                 ObjectDepth--;
             }
+
             return tokenToReturn;
         }
 
@@ -198,7 +213,7 @@ namespace Protobuf.Text
         private sealed class TextTextTokenizer : TextTokenizer
         {
             // The set of states in which a value is valid next token.
-            private static readonly State ValueStates = State.ArrayStart | State.ArrayAfterComma  | State.ObjectStart| State.ObjectBeforeColon | State.ObjectAfterColon | State.StartOfDocument;
+            private static readonly State ValueStates = State.ArrayStart | State.ArrayAfterComma | State.ArrayAfterValue | State.ObjectStart| State.ObjectBeforeColon | State.ObjectAfterColon | State.StartOfDocument;
 
             private readonly Stack<ContainerType> containerStack = new Stack<ContainerType>();
             private readonly PushBackReader reader;
@@ -226,7 +241,7 @@ namespace Protobuf.Text
                         continue;
                     }
 
-                    if (next.Value == ' ' || next.Value == '\r' || next.Value == '\n')
+                    if (char.IsWhiteSpace(next.Value))
                     {
                         continue;
                     }
@@ -247,6 +262,11 @@ namespace Protobuf.Text
                 if (state == State.ReaderExhausted)
                 {
                     throw new InvalidOperationException("Next() called after end of document");
+                }
+
+                if (state == State.StartOfDocument)
+                {
+                    CleanDocumentHead();
                 }
 
                 while (true)
@@ -425,12 +445,7 @@ namespace Protobuf.Text
             }
 
             private string ReadName()
-            {
-                if (state == State.StartOfDocument)
-                {
-                    CleanComment();
-                }
-                
+            {               
                 var value = new StringBuilder();
 
                 var i = 0;
@@ -486,7 +501,7 @@ namespace Protobuf.Text
                 }
             }
 
-            private void CleanComment()
+            private void CleanDocumentHead()
             {
                 var next = ReadNoisyContent();
 
@@ -499,11 +514,6 @@ namespace Protobuf.Text
             /// </summary>
             private string ReadString(char endChar)
             {
-                if (state == State.StartOfDocument)
-                {
-                    CleanComment();
-                }
-
                 var value = new StringBuilder();
                 bool haveHighSurrogate = false;
                 
@@ -511,7 +521,7 @@ namespace Protobuf.Text
                 {
                     char c = reader.ReadChar();
 
-                    if (c == '\0' || c == ':')
+                    if (c == '\0' || c == endChar)
                     {
                         return value.ToString();
                     }
@@ -519,16 +529,6 @@ namespace Protobuf.Text
                     if (c < ' ')
                     {
                         throw reader.CreateException(string.Format(CultureInfo.InvariantCulture, "Invalid character in string literal: U+{0:x4}", (int) c));
-                    }
-
-                    if (c == endChar)
-                    {
-                        if (haveHighSurrogate)
-                        {
-                            throw reader.CreateException("Invalid use of surrogate pair code units");
-                        }
-
-                        return value.ToString();
                     }
 
                     if (c == '\\')
@@ -668,26 +668,6 @@ namespace Protobuf.Text
                 return GetToken(sb.ToString());
             }
 
-            /// <summary>
-            /// Consumes a text-only literal, throwing an exception if the read text doesn't match it.
-            /// It is assumed that the first letter of the literal has already been read.
-            /// </summary>
-            private void ConsumeLiteral(string text)
-            {
-                for (int i = 1; i < text.Length; i++)
-                {
-                    char? next = reader.Read();
-                    if (next == null)
-                    {
-                        throw reader.CreateException("Unexpected end of text while reading literal token " + text);
-                    }
-                    if (next.Value != text[i])
-                    {
-                        throw reader.CreateException("Unexpected character while reading literal token " + text);
-                    }
-                }
-            }
-
             private TextToken GetNumberToken(char initialCharacter)
             {
                 var strNum = ReadNumber(initialCharacter);
@@ -714,6 +694,7 @@ namespace Protobuf.Text
                 {
                     next = ReadFrac(builder);
                 }
+                
                 if (next == 'e' || next == 'E')
                 {
                     next = ReadExp(builder);
@@ -734,14 +715,14 @@ namespace Protobuf.Text
 
                 if (first < '0' || first > '9')
                 {
-                    throw reader.CreateException("Invalid numeric literal");
+                    throw new InvalidTextException("Invalid numeric literal");
                 }
                 builder.Append(first);
                 int digitCount;
                 char? next = ConsumeDigits(builder, out digitCount);
                 if (first == '0' && digitCount != 0)
                 {
-                    throw reader.CreateException("Invalid numeric literal: leading 0 for non-zero value.");
+                    throw new InvalidTextException("Invalid numeric literal: leading 0 for non-zero value.");
                 }
                 return next;
             }
@@ -753,7 +734,7 @@ namespace Protobuf.Text
                 char? next = ConsumeDigits(builder, out digitCount);
                 if (digitCount == 0)
                 {
-                    throw reader.CreateException("Invalid numeric literal: fraction with no trailing digits");
+                    throw new InvalidTextException("Invalid numeric literal: fraction with no trailing digits");
                 }
                 return next;
             }
@@ -764,7 +745,7 @@ namespace Protobuf.Text
                 char? next = reader.Read();
                 if (next == null)
                 {
-                    throw reader.CreateException("Invalid numeric literal: exponent with no trailing digits");
+                    throw new InvalidTextException("Invalid numeric literal: exponent with no trailing digits");
                 }
                 if (next == '-' || next == '+')
                 {
@@ -778,7 +759,7 @@ namespace Protobuf.Text
                 next = ConsumeDigits(builder, out digitCount);
                 if (digitCount == 0)
                 {
-                    throw reader.CreateException("Invalid numeric literal: exponent without value");
+                    throw new InvalidTextException("Invalid numeric literal: exponent without value");
                 }
                 return next;
             }
@@ -823,6 +804,7 @@ namespace Protobuf.Text
                         return;
                     case State.ArrayStart:
                     case State.ArrayAfterComma:
+                    case State.ArrayAfterValue:
                         state = State.ArrayAfterValue;
                         return;
                     default:
@@ -1024,10 +1006,10 @@ namespace Protobuf.Text
                 /// <summary>
                 /// Creates a new exception appropriate for the current state of the reader.
                 /// </summary>
-                internal InvalidTextException CreateException(string message)
+                internal InvalidTextProtocolBufferException CreateException(string message)
                 {
                     // TODO: Keep track of and use the location.
-                    return new InvalidTextException(message);
+                    return new InvalidTextProtocolBufferException(message);
                 }
 
                 internal string ReadLine()

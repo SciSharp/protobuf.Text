@@ -344,10 +344,12 @@ namespace Protobuf.Text
             while (true)
             {
                 token = tokenizer.Next();
-                if (token.Type == TokenType.EndObject)
+
+                if (token.Type == TokenType.EndObject || token.Type == TokenType.EndDocument)
                 {
                     return;
                 }
+
                 object key = ParseMapKey(keyField, token.StringValue);
                 object value = ParseSingleValue(valueField, tokenizer);
                 if (value == null)
@@ -517,6 +519,8 @@ namespace Protobuf.Text
                         field.Accessor.SetValue(message, list);
                         return;
                     }
+                case TokenType.EndDocument:
+                    return;
                 default:
                     throw new InvalidOperationException("Unexpected token type: " + firstToken.Type);
             }
@@ -612,7 +616,8 @@ namespace Protobuf.Text
             }
             Merge(body, tokenizer);
             token = tokenizer.Next();
-            if (token.Type != TokenType.EndObject)
+
+            if (token.Type != TokenType.EndObject && token.Type != TokenType.EndDocument)
             {
                 throw new InvalidTextProtocolBufferException($"Expected end-object token after @type/value for well-known type");
             }
@@ -843,7 +848,7 @@ namespace Protobuf.Text
                 (isNegativeInfinity && text != "-Infinity") ||
                 (isNaN && text != "NaN"))
             {
-                throw new InvalidTextProtocolBufferException($"Invalid numeric value: {text}");
+                throw new InvalidTextException($"Invalid numeric value: {text}");
             }
         }
 
