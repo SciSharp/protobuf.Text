@@ -1,7 +1,7 @@
 # Google Protobuf for TextFormat
-Text format support for [protobuf](https://github.com/protocolbuffers/protobuf) in C#.
+Protobuf is not supporting text-format in the Google.Protobuf C# implementation at this moment. This project provides text format support for [protobuf](https://github.com/protocolbuffers/protobuf) in C#. 
 
-[![Join the chat at https://gitter.im/publiclab/publiclab](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/sci-sharp/community)[![NuGet](https://img.shields.io/nuget/dt/Protobuf.Text.svg)](https://www.nuget.org/packages/Protobuf.Text)
+[![Join the chat at https://gitter.im/publiclab/publiclab](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/sci-sharp/community) [![NuGet](https://img.shields.io/nuget/dt/Protobuf.Text.svg)](https://www.nuget.org/packages/Protobuf.Text)
 
 ```shell
 PM> Install-Package Protobuf.Text
