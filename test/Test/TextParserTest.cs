@@ -76,6 +76,8 @@ namespace Test
             Assert.Throws<InvalidTextException>(() => TextParser.Default.Parse<TestMap>(json));
         }
 
+        
+
         [Fact]
         public void OriginalFieldNameAccepted()
         {
@@ -89,6 +91,7 @@ namespace Test
         {
             AssertRoundtrip(new SourceContext { FileName = "foo.proto" });
         }
+        
 
         [Fact]
         public void SingularWrappers_DefaultNonNullValues()
@@ -238,14 +241,7 @@ namespace Test
             // Can parse strings directly too
             Assert.Equal(new Int32Value { Value = 1 }, Int32Value.Parser.ParseText("\"1\""));
         }
-
-        private static void AssertRoundtrip<T>(T message) where T : IMessage<T>, new()
-        {
-            var clone = message.Clone();
-            var json = TextFormatter.Default.Format(message);
-            var parsed = TextParser.Default.Parse<T>(json);
-            Assert.Equal(clone, parsed);
-        }
+        
 
         [Theory]
         [InlineData("0", 0)]
@@ -482,6 +478,7 @@ namespace Test
             string json = "singleUint32: " + jsonValue;
             Assert.Throws<InvalidTextProtocolBufferException>(() => TestAllTypes.Parser.ParseText(json));
         }
+        
 
         [Theory]
         [InlineData("0", 0L)]
@@ -740,6 +737,7 @@ namespace Test
             Assert.Equal(new Struct { Fields = { { "x", Value.ForNumber(1) }, { "y", Value.ForString("z") } } },
                 Struct.Parser.ParseText("x: 1, y: \"z\""));
         }
+        
 
         // TODO for duration parsing: upper and lower bounds.
         // +/- 315576000000 seconds
@@ -799,6 +797,8 @@ namespace Test
             Assert.Throws<InvalidTextProtocolBufferException>(() => Duration.Parser.ParseText(json));
         }
 
+        
+
         // Not as many tests for field masks as I'd like; more to be added when we have more
         // detailed specifications.
 
@@ -815,6 +815,7 @@ namespace Test
             var parsed = FieldMask.Parser.ParseText(json);
             Assert.Equal(expectedPaths, parsed.Paths);
         }
+        
 
         [Theory]
         [InlineData("foo_bar")]
@@ -823,6 +824,8 @@ namespace Test
             string json = WrapInQuotes(jsonValue);
             Assert.Throws<InvalidTextProtocolBufferException>(() => FieldMask.Parser.ParseText(json));
         }
+
+        
 
         [Fact]
         public void Any_RegularMessage()
@@ -849,6 +852,7 @@ namespace Test
             Assert.Equal(original, parser.Parse<Any>(json));
         }
 
+
         [Fact]
         public void Any_UnknownType()
         {
@@ -863,6 +867,7 @@ namespace Test
             Assert.Throws<InvalidTextProtocolBufferException>(() => Any.Parser.ParseText(json));
         }
 
+        
         [Fact]
         public void Any_WellKnownType()
         {
@@ -926,6 +931,7 @@ namespace Test
             string json = "oneofString: \"x\"\noneofUint32: 10";
             Assert.Throws<InvalidTextProtocolBufferException>(() => TestAllTypes.Parser.ParseText(json));
         }
+        
 
         [Fact]
         public void UnknownField_NotIgnored()
@@ -946,6 +952,14 @@ namespace Test
             var actual = parser.Parse<TestAllTypes>(json);
             var expected = new TestAllTypes { SingleString = "x" };
             Assert.Equal(expected, actual);
+        }
+
+        private static void AssertRoundtrip<T>(T message) where T : IMessage<T>, new()
+        {
+            var clone = message.Clone();
+            var json = TextFormatter.Default.Format(message);
+            var parsed = TextParser.Default.Parse<T>(json);
+            Assert.Equal(clone, parsed);
         }
 
         /// <summary>
