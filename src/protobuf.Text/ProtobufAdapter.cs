@@ -54,7 +54,7 @@ namespace Protobuf.Text
         internal const int WrapperValueFieldNumber = Int32Value.ValueFieldNumber;
     }
 
-    internal static class ProtobufAdapter
+    public static class ProtobufAdapter
     {
         internal const string AnyTypeUrlField = "@type";
         internal const string AnyDiagnosticValueField = "@value";
