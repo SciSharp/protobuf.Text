@@ -10,6 +10,13 @@ PM> Install-Package Protobuf.Text
 **How to use:**
 
 ```csharp
+// parse from text
+TestAllTypes parsedFromText = TestAllTypes.Parser.ParseText(text);
+
+// serialize to text
+var text = parsedFromText.ToText();
+
+// config
 var config = File.ReadAllText("PATH");
 var parsed = TextParser.Default.Parse<T>(config);
 ```

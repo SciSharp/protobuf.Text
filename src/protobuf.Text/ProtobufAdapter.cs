@@ -137,6 +137,12 @@ namespace Protobuf.Text
             return false;
         }
 
+        public static string ToText<T>(this IMessage<T> msg)
+            where T : IMessage<T>
+        {
+            return TextFormatter.Default.Format(msg);
+        }
+
         public static T ParseText<T>(this MessageParser<T> parser, string text)
             where T : IMessage<T>
         {

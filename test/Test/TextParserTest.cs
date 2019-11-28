@@ -914,6 +914,9 @@ namespace Test
             string json = "singleForeignEnum: " + value;
             var parsed = TestAllTypes.Parser.ParseText(json);
             Assert.Equal(new TestAllTypes { SingleForeignEnum = expectedValue }, parsed);
+            // test serialize back
+            var text = parsed.ToText();
+            Assert.Equal(json, text);
         }
 
         [Theory]

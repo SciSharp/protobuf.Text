@@ -3,7 +3,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Protobuf.Text</RootNamespace>
     <AssemblyName>Protobuf.Text</AssemblyName>
-    <Version>0.3.1</Version>
+    <Version>0.4.0</Version>
     <Company>SciSharp STACK</Company>
     <Product>protobug.Text</Product>
     <Authors>Kerry Jiang and other contributors</Authors>
@@ -14,10 +14,10 @@
     <RepositoryUrl>https://github.com/SciSharp/protobuf.Text</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>C#,protobuf,text,text format</PackageTags>
-    <PackageReleaseNotes>Expose Parser.ParseText()</PackageReleaseNotes>
+    <PackageReleaseNotes>Upgrade Google.Protobuf to 3.10.1.</PackageReleaseNotes>
     <PackageIconUrl>https://avatars3.githubusercontent.com/u/44989469?s=200&amp;v=4</PackageIconUrl>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Google.Protobuf" Version="$(ProtobufVersion)" />
+    <PackageReference Include="Google.Protobuf" Version="3.10.1" />
   </ItemGroup>
 </Project>
