@@ -14,10 +14,13 @@
     <RepositoryUrl>https://github.com/SciSharp/protobuf.Text</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>C#,protobuf,text,text format</PackageTags>
-    <PackageReleaseNotes>Upgrade Google.Protobuf to 3.10.1.</PackageReleaseNotes>
+    <PackageReleaseNotes>Upgrade Google.Protobuf to 3.11.3.</PackageReleaseNotes>
     <PackageIconUrl>https://avatars3.githubusercontent.com/u/44989469?s=200&amp;v=4</PackageIconUrl>
+    <SignAssembly>false</SignAssembly>
+    <AssemblyOriginatorKeyFile>Open.snk</AssemblyOriginatorKeyFile>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Google.Protobuf" Version="$(ProtobufVersion)" />    
+    <PackageReference Include="Google.Protobuf" Version="3.11.3" />    
   </ItemGroup>
 </Project>
