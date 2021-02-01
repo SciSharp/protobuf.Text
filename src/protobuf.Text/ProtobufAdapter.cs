@@ -90,6 +90,47 @@ namespace Protobuf.Text
             return file.Package == "google.protobuf" && WellKnownTypeNames.Contains(file.Name);
         }
 
+        internal static bool IsValueType(this IMessage value)
+        {
+            if (value is Google.Protobuf.WellKnownTypes.Timestamp)
+                return true;
+
+            if (value is Google.Protobuf.WellKnownTypes.Struct)
+                return true;
+
+            if (value is Google.Protobuf.WellKnownTypes.StringValue)
+                return true;
+
+            if (value is Google.Protobuf.WellKnownTypes.Int32Value)
+                return true;
+
+            if (value is Google.Protobuf.WellKnownTypes.UInt32Value)
+                return true;
+
+            if (value is Google.Protobuf.WellKnownTypes.Int64Value)
+                return true;
+
+             if (value is Google.Protobuf.WellKnownTypes.UInt64Value)
+                return true;
+
+            if (value is Google.Protobuf.WellKnownTypes.BoolValue)
+                return true;
+
+            if (value is Google.Protobuf.WellKnownTypes.BytesValue)
+                return true;
+
+            if (value is Google.Protobuf.WellKnownTypes.DoubleValue)
+                return true;
+
+            if (value is Google.Protobuf.WellKnownTypes.FloatValue)
+                return true;
+
+            if (value is Google.Protobuf.WellKnownTypes.EnumValue)
+                return true;
+
+            return false;
+        }
+
         internal static bool IsWrapperType(this IDescriptor descriptor)
         {
             var file = descriptor.File;

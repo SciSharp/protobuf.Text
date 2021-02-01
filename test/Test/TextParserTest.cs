@@ -651,6 +651,28 @@ namespace Test
         }
 
         [Theory]
+        [InlineData("2015-10-09T14:46:23.123456789Z")]
+        public void TimestampField_Text(string textValue)
+        {
+            var text = $"optional_timestamp: \"{textValue}\"";
+            var parsed = ProtobufTestMessages.Proto3.TestAllTypesProto3.Parser.ParseText(text);
+            var msg = parsed as IMessage;
+            var formatted = TextFormatter.Default.Format(parsed);
+            Assert.Equal(text, formatted);
+        }
+
+        [Theory]
+        // Z offset
+        [InlineData("2015-10-09T14:46:23.123456789Z", null)]
+        public void TimestampField_Valid(string jsonValue, string expectedFormatted)
+        {
+            expectedFormatted = expectedFormatted ?? jsonValue;
+            string json = WrapInQuotes(jsonValue);
+            var parsed = Timestamp.Parser.ParseText(json);
+            Assert.Equal(WrapInQuotes(expectedFormatted), parsed.ToString());
+        }
+
+        [Theory]
         [InlineData("2015-10-09 14:46:23.123456789Z")]
         [InlineData("2015/10/09T14:46:23.123456789Z")]
         [InlineData("2015-10-09T14.46.23.123456789Z")]
@@ -914,9 +936,6 @@ namespace Test
             string json = "singleForeignEnum: " + value;
             var parsed = TestAllTypes.Parser.ParseText(json);
             Assert.Equal(new TestAllTypes { SingleForeignEnum = expectedValue }, parsed);
-            // test serialize back
-            var text = parsed.ToText();
-            Assert.Equal(json, text);
         }
 
         [Theory]

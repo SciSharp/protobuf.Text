@@ -260,7 +260,7 @@ namespace Protobuf.Text
 
             var wrapped = false;
 
-            if (field.IsMap || (value is IMessage && !(value is Value)))
+            if (field.IsMap || (value is IMessage && !(value is Value) && !(value as IMessage).IsValueType()))
             {
                 writer.Write(" {\n");
                 wrapped = true;
@@ -1036,7 +1036,7 @@ namespace Protobuf.Text
             // valid language elements.
             static Settings()
             {
-                Default = new Settings(false);
+                Default = new Settings(false, TypeRegistry.Empty, true);
             }
 
             /// <summary>
