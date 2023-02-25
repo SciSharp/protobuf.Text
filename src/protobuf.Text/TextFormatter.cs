@@ -811,7 +811,7 @@ namespace Protobuf.Text
             writer.Write(Hex[(c >> 0) & 0xf]);
         }
 
-        internal static string EncodeByteString(ByteString byteString)
+        public static string EncodeByteString(ByteString byteString)
         {
             var writer = new StringWriter();
             WriteByteString(writer, byteString);

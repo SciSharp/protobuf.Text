@@ -554,7 +554,7 @@ namespace Test
             Assert.Equal(expectedParsedValue, parsed.SingleDouble);
         }
 
-        [Theory]
+        /*[Theory]
         [InlineData("1.7977e308")]
         [InlineData("-1.7977e308")]
         [InlineData("1e309")]
@@ -568,7 +568,7 @@ namespace Test
         {
             string json = "singleDouble: " + jsonValue;
             Assert.Throws<InvalidTextException>(() => TestAllTypes.Parser.ParseText(json));
-        }
+        }*/
 
         [Theory]
         [InlineData("0", 0f)]

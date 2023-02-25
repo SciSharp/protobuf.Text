@@ -46,12 +46,12 @@ using System.Collections;
 
 namespace Protobuf.Text
 {
-    internal static partial class WrappersReflection
+    public static partial class WrappersReflection
     {
         /// <summary>
         /// Field number for the single "value" field in all wrapper types.
         /// </summary>
-        internal const int WrapperValueFieldNumber = Int32Value.ValueFieldNumber;
+        public const int WrapperValueFieldNumber = Int32Value.ValueFieldNumber;
     }
 
     public static class ProtobufAdapter

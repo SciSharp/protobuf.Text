@@ -42,7 +42,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 
-[assembly: InternalsVisibleTo("Test")]
 namespace Protobuf.Text
 {
     /// <summary>
@@ -121,7 +120,7 @@ namespace Protobuf.Text
         /// </summary>
         /// <param name="message">The message to merge the text information into.</param>
         /// <param name="text">The text to parse.</param>
-        internal void Merge(IMessage message, string text)
+        public void Merge(IMessage message, string text)
         {
             Merge(message, new StringReader(text));
         }
@@ -131,7 +130,7 @@ namespace Protobuf.Text
         /// </summary>
         /// <param name="message">The message to merge the text information into.</param>
         /// <param name="textReader">Reader providing the text to parse.</param>
-        internal void Merge(IMessage message, TextReader textReader)
+        public void Merge(IMessage message, TextReader textReader)
         {
             var tokenizer = TextTokenizer.FromTextReader(textReader);
             Merge(message, tokenizer);
