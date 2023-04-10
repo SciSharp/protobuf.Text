@@ -34,6 +34,6 @@
     <Optimize>False</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Google.Protobuf" Version="3.19.6" />    
+    <PackageReference Include="Google.Protobuf" Version="3.21.9" />    
   </ItemGroup>
 </Project>
