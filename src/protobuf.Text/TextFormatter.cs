@@ -888,10 +888,6 @@ namespace Protobuf.Text
             for (int i = 0; i < input.Length; i++)
             {
                 char c = input[i];
-                if (c > 127 || c < 32)
-                {
-                    throw new FormatException("Escaped string must only contain ASCII");
-                }
                 if (c != '\\')
                 {
                     result[pos++] = (byte) c;
