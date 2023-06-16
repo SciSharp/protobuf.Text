@@ -822,6 +822,10 @@ namespace Protobuf.Text
                     throw new InvalidTextException($"Invalid numeric value: {text}");
                 }
             }
+            if(text == "inf")
+            {
+                text = float.MaxValue.ToString("G" + 40, CultureInfo.InvariantCulture);
+            }
             try
             {
                 return parser(text, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, CultureInfo.InvariantCulture);

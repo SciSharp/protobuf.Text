@@ -713,6 +713,16 @@ namespace Protobuf.Text
             {
                 char first = reader.ReadChar();
 
+                if(first == 'i')
+                {
+                    char? possible_next = ConsumeINF(builder, out var success);
+                    if (!success)
+                    {
+                        throw new InvalidTextException("Invalid INF literal.");
+                    }
+                    return possible_next;
+                }
+
                 if (first < '0' || first > '9')
                 {
                     throw new InvalidTextException("Invalid numeric literal");
@@ -777,6 +787,24 @@ namespace Protobuf.Text
                     count++;
                     builder.Append(next.Value);
                 }
+            }
+
+            private char? ConsumeINF(StringBuilder builder, out bool success)
+            {
+                char? next = reader.Read();
+                if(next != 'n')
+                {
+                    success = false;
+                }
+                next = reader.Read();
+                if (next != 'f')
+                {
+                    success = false;
+                }
+                builder.Append(float.MaxValue.ToString("G" + 40, CultureInfo.InvariantCulture));
+                next = reader.Read();
+                success = true;
+                return next;
             }
 
             /// <summary>
