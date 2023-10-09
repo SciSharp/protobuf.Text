@@ -278,11 +278,33 @@ namespace Protobuf.Text
 
         private void WriteRepeatedField(TextWriter writer, FieldDescriptor field, object value)
         {
-            // Repeated field.  Print each element.
-            foreach (object element in (IEnumerable) value)
+            if(settings.FormatRepeatedValueOnSingleLine && (value as IList)[0].GetType().IsValueType)
             {
-                WriteSingleField(writer, field, element);
+                writer.Write(field.Name);
+                writer.Write(NameValueSeparator);                
+                writer.Write("[");
+                bool first = true;
+                foreach (object element in (IEnumerable) value)
+                {
+                    if(!first)
+                    {
+                        writer.Write(", ");
+                    }
+
+                    WriteValue(writer, element);
+                    first = false;
+                }                
+                writer.Write(" ]");
                 writer.Write(PropertySeparator);
+            }
+            else
+            {
+                // Repeated field.  Print each element.
+                foreach (object element in (IEnumerable) value)
+                {
+                    WriteSingleField(writer, field, element);
+                    writer.Write(PropertySeparator);
+                }
             }
         }
 
@@ -1032,7 +1054,7 @@ namespace Protobuf.Text
             // valid language elements.
             static Settings()
             {
-                Default = new Settings(false, TypeRegistry.Empty, true);
+                Default = new Settings(false, TypeRegistry.Empty, true, false);
             }
 
             /// <summary>
@@ -1040,6 +1062,12 @@ namespace Protobuf.Text
             /// should be formatted (true) or omitted (false).
             /// </summary>
             public bool FormatDefaultValues { get; }
+
+            /// <summary>
+            /// Whether repeated fields that contains value types will be printed on a single line
+            /// (repeated : [0, 0, 0, 0 ]) instead of one line pr. contained value 
+            /// </summary>
+            public bool FormatRepeatedValueOnSingleLine { get; }
 
             /// <summary>
             /// The type registry used to format <see cref="Any"/> messages.
@@ -1067,7 +1095,7 @@ namespace Protobuf.Text
             /// </summary>
             /// <param name="formatDefaultValues"><c>true</c> if default values (0, empty strings etc) should be formatted; <c>false</c> otherwise.</param>
             /// <param name="typeRegistry">The <see cref="TypeRegistry"/> to use when formatting <see cref="Any"/> messages.</param>
-            public Settings(bool formatDefaultValues, TypeRegistry typeRegistry) : this(formatDefaultValues, typeRegistry, false)
+            public Settings(bool formatDefaultValues, TypeRegistry typeRegistry) : this(formatDefaultValues, typeRegistry, false, false)
             {
             }
 
@@ -1077,32 +1105,41 @@ namespace Protobuf.Text
             /// <param name="formatDefaultValues"><c>true</c> if default values (0, empty strings etc) should be formatted; <c>false</c> otherwise.</param>
             /// <param name="typeRegistry">The <see cref="TypeRegistry"/> to use when formatting <see cref="Any"/> messages. TypeRegistry.Empty will be used if it is null.</param>
             /// <param name="formatEnumsAsIntegers"><c>true</c> to format the enums as integers; <c>false</c> to format enums as enum names.</param>
+            /// <param name="formatRepeatedValueOnSingleLine"><c>true</c> to format the repeated containing value types on a single line; <c>false</c> format repeated to print one line pr. entry</param>
             private Settings(bool formatDefaultValues,
                             TypeRegistry typeRegistry,
-                            bool formatEnumsAsIntegers)
+                            bool formatEnumsAsIntegers,
+                            bool formatRepeatedValueOnSingleLine)
             {
                 FormatDefaultValues = formatDefaultValues;
                 TypeRegistry = typeRegistry ?? TypeRegistry.Empty;
                 FormatEnumsAsIntegers = formatEnumsAsIntegers;
+                FormatRepeatedValueOnSingleLine = formatRepeatedValueOnSingleLine;
             }
 
             /// <summary>
             /// Creates a new <see cref="Settings"/> object with the specified formatting of default values and the current settings.
             /// </summary>
             /// <param name="formatDefaultValues"><c>true</c> if default values (0, empty strings etc) should be formatted; <c>false</c> otherwise.</param>
-            public Settings WithFormatDefaultValues(bool formatDefaultValues) => new Settings(formatDefaultValues, TypeRegistry, FormatEnumsAsIntegers);
+            public Settings WithFormatDefaultValues(bool formatDefaultValues) => new Settings(formatDefaultValues, TypeRegistry, FormatEnumsAsIntegers, FormatRepeatedValueOnSingleLine);
 
             /// <summary>
             /// Creates a new <see cref="Settings"/> object with the specified type registry and the current settings.
             /// </summary>
             /// <param name="typeRegistry">The <see cref="TypeRegistry"/> to use when formatting <see cref="Any"/> messages.</param>
-            public Settings WithTypeRegistry(TypeRegistry typeRegistry) => new Settings(FormatDefaultValues, typeRegistry, FormatEnumsAsIntegers);
+            public Settings WithTypeRegistry(TypeRegistry typeRegistry) => new Settings(FormatDefaultValues, typeRegistry, FormatEnumsAsIntegers, FormatRepeatedValueOnSingleLine);
 
             /// <summary>
             /// Creates a new <see cref="Settings"/> object with the specified enums formatting option and the current settings.
             /// </summary>
             /// <param name="formatEnumsAsIntegers"><c>true</c> to format the enums as integers; <c>false</c> to format enums as enum names.</param>
-            public Settings WithFormatEnumsAsIntegers(bool formatEnumsAsIntegers) => new Settings(FormatDefaultValues, TypeRegistry, formatEnumsAsIntegers);
+            public Settings WithFormatEnumsAsIntegers(bool formatEnumsAsIntegers) => new Settings(FormatDefaultValues, TypeRegistry, formatEnumsAsIntegers, FormatRepeatedValueOnSingleLine);
+
+            /// <summary>
+            /// Creates a new <see cref="Settings"/> object with the specified repeated formatting option and the current settings.
+            /// </summary>
+            /// <param name="formatRepeatedValueOnSingleLine"><c>true</c> to format the repeated containing value types on a single line; <c>false</c> format repeated to print one line pr. entry</param>
+            public Settings WithFormatRepeatedValueOnsingleLine(bool formatRepeatedValueOnSingleLine) => new Settings(FormatDefaultValues, TypeRegistry, FormatEnumsAsIntegers, formatRepeatedValueOnSingleLine);
         }
 
     }
