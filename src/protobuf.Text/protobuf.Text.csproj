@@ -3,7 +3,7 @@
     <TargetFrameworks>netstandard2.0;net6.0</TargetFrameworks>
     <RootNamespace>Protobuf.Text</RootNamespace>
     <AssemblyName>Protobuf.Text</AssemblyName>
-    <Version>0.7.1</Version>
+    <Version>0.7.2</Version>
     <Company>SciSharp STACK</Company>
     <Product>protobug.Text</Product>
     <Authors>Kerry Jiang and other contributors</Authors>
@@ -34,6 +34,6 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Google.Protobuf" Version="3.21.9" />    
+    <PackageReference Include="Google.Protobuf" Version="3.21.12" />    
   </ItemGroup>
 </Project>
