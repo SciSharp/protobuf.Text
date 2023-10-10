@@ -240,6 +240,7 @@ namespace Protobuf.Text
                 {
                     writer.Write(PropertySeparator);
                 }
+                first = false;
 
                 if (field.IsRepeated && !field.IsMap)
                 {
@@ -249,7 +250,6 @@ namespace Protobuf.Text
 
                 WriteSingleField(writer, field, value);
 
-                first = false;
             }
             return !first;
         }
@@ -295,15 +295,19 @@ namespace Protobuf.Text
                     first = false;
                 }                
                 writer.Write(" ]");
-                writer.Write(PropertySeparator);
             }
             else
             {
+                int numberOfElements = (value as IList).Count;
                 // Repeated field.  Print each element.
                 foreach (object element in (IEnumerable) value)
                 {
                     WriteSingleField(writer, field, element);
-                    writer.Write(PropertySeparator);
+                    numberOfElements--;
+                    if(numberOfElements > 0)
+                    {
+                        writer.Write(PropertySeparator);
+                    }
                 }
             }
         }
