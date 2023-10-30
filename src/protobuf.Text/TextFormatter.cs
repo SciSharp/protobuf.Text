@@ -462,7 +462,7 @@ namespace Protobuf.Text
                     string name = OriginalEnumValueHelper.GetOriginalName(value);
                     if (name != null)
                     {
-                        WriteString(writer, name);
+                        WriteString(writer, name, false);
                     }
                     else
                     {
@@ -753,14 +753,17 @@ namespace Protobuf.Text
         }
 
         /// <summary>
-        /// Writes a string (including leading and trailing double quotes) to a builder, escaping as required.
+        /// Writes a string (including leading and trailing double quotes if addQuotesAroundString is true) to a builder, escaping as required.
         /// </summary>
         /// <remarks>
         /// Other than surrogate pair handling, this code is mostly taken from src/google/protobuf/util/internal/json_escaping.cc.
         /// </remarks>
-        internal static void WriteString(TextWriter writer, string text)
+        internal static void WriteString(TextWriter writer, string text, bool addQuotesAroundString = true)
         {
-            writer.Write('"');
+            if(addQuotesAroundString) {
+                writer.Write('"');
+            }
+
             for (int i = 0; i < text.Length; i++)
             {
                 char c = text[i];
@@ -820,7 +823,9 @@ namespace Protobuf.Text
                         break;
                 }
             }
-            writer.Write('"');
+            if(addQuotesAroundString) {
+                writer.Write('"');
+            }
         }
 
         private const string Hex = "0123456789abcdef";
