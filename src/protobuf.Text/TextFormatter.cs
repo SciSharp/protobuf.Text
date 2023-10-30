@@ -278,7 +278,7 @@ namespace Protobuf.Text
 
         private void WriteRepeatedField(TextWriter writer, FieldDescriptor field, object value)
         {
-            if(settings.FormatRepeatedValueOnSingleLine && (value as IList)[0].GetType().IsValueType)
+            if(settings.FormatRepeatedValueOnSingleLine && (value as IList).Count > 0 && (value as IList)[0].GetType().IsValueType)
             {
                 writer.Write(field.Name);
                 writer.Write(NameValueSeparator);                
